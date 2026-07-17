@@ -45,6 +45,10 @@ The `/hint` endpoint calls OpenAI on every request and has no authentication —
 
 Free tier covers normal demo traffic completely; these exist for the outlier, not the baseline. Full reasoning in ADR-0006.
 
+## Startup Guard: Fail Fast on Misconfigured Persistence
+
+`REQUIRE_PERSISTENT_STORAGE=true` is set only in the Cloud Run deploy (`deploy.yml`). At app startup, `app/main.py` checks this against `is_firestore_configured()` and raises immediately if it's true but Firestore isn't actually configured — e.g. a future deploy that forgets to set `GOOGLE_CLOUD_PROJECT`. Without this, that mistake would be silent: the app starts fine on the in-memory fallback, `/health` returns `200` (it doesn't touch storage), and the deploy job's smoke test — the one thing that was supposed to catch a broken deploy — would report success on a backend quietly forgetting every player, hint, and attempt on its next cold start. With the guard, the container fails to start, Cloud Run never reports it healthy, and the smoke test's `curl` gets a connection failure instead of a false positive. No-op locally and under pytest (the env var is never set there), so local dev and the test suite are unaffected.
+
 ## Secrets and IAM
 
 - `ADMIN_API_TOKEN` and `OPENAI_API_KEY` live in Secret Manager, injected into Cloud Run via `--set-secrets` (never as plain env vars, never printed during setup).
