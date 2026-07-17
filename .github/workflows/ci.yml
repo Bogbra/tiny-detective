@@ -35,3 +35,44 @@ jobs:
           version: "0.10.2"
       - run: uv sync
       - run: uv run pytest
+
+  # A named, visible subset of what backend-checks already runs in full —
+  # deliberate overlap, not an oversight. The project spec names this job
+  # explicitly, and a PR showing a separately-labeled "contract-checks"
+  # failure states exactly what broke (the public API contract) instead of
+  # just "backend-checks failed," which could mean anything from a domain
+  # unit test to this. See docs/architecture-decisions/ADR-0006.
+  contract-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.10.2"
+      - run: uv sync
+      - run: uv run pytest tests/contract
+
+  ai-tool-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/ai-content
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.10.2"
+      - run: uv sync
+      - run: uv run pytest
+
+  # Build-only — proves the image builds, doesn't push anywhere. The real
+  # push (to Artifact Registry) happens in deploy.yml, only on main, only
+  # after this job (and the others) have already passed once via CI.
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t tiny-detective-api services/api

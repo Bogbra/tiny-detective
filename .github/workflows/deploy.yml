@@ -1,0 +1,108 @@
+name: Deploy
+
+# Chained off CI's completion (not re-running the checks here) so a broken
+# build never reaches Cloud Run/Hosting — "do not deploy if checks fail".
+# workflow_run always reads this file from the default branch, so the very
+# first push that adds this workflow won't retroactively fire from the CI
+# run that just happened; workflow_dispatch exists for that bootstrap case
+# and for any future ad-hoc redeploy.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # One workflow, two jobs (needs: for ordering) instead of two separate
+  # workflow_run-chained files — a 3-deep trigger chain (CI -> deploy-api ->
+  # deploy-web) adds fragility that isn't earning its keep at this project's
+  # size: harder to debug, and a broken link is easy to miss in the Actions
+  # UI. See docs/architecture-decisions/ADR-0006.
+  deploy-api:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for Workload Identity Federation
+    outputs:
+      api_url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.DEPLOYER_SA_EMAIL }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push image
+        working-directory: services/api
+        run: |
+          gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
+          IMAGE="${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/tiny-detective-api/api:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "image=$IMAGE" >> "$GITHUB_ENV"
+
+      # --max-instances bounds a traffic spike (the public /hint endpoint
+      # calls OpenAI on every request); --min-instances=0 is explicit, not
+      # left at the default, because a demo should actually scale to zero
+      # when idle — cold starts don't matter here, a running instance with
+      # no traffic does.
+      - id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: tiny-detective-api
+          region: ${{ vars.GCP_REGION }}
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          image: ${{ env.image }}
+          flags: >-
+            --allow-unauthenticated
+            --service-account=${{ vars.RUNTIME_SA_EMAIL }}
+            --max-instances=3
+            --min-instances=0
+            --set-env-vars=GOOGLE_CLOUD_PROJECT=${{ vars.GCP_PROJECT_ID }},ALLOWED_ORIGINS=https://${{ vars.GCP_PROJECT_ID }}.web.app
+            --set-secrets=ADMIN_API_TOKEN=ADMIN_API_TOKEN:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest
+
+      - name: Deploy Firestore rules and indexes
+        run: |
+          npm install -g firebase-tools@15
+          firebase deploy --only firestore:rules,firestore:indexes --project="${{ vars.GCP_PROJECT_ID }}" --non-interactive
+
+      - name: Smoke test /health
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.deploy.outputs.url }}/health")
+          if [ "$status" != "200" ]; then
+            echo "Health check failed: got $status"
+            exit 1
+          fi
+
+  deploy-web:
+    needs: deploy-api
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/game
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.6
+
+      - run: flutter pub get
+      - run: flutter build web --release --dart-define=API_BASE_URL=${{ needs.deploy-api.outputs.api_url }}
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ vars.GCP_PROJECT_ID }}
+          channelId: live

@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api import dependencies
+from app.api.rate_limiting import limiter
 from app.infrastructure.repositories.in_memory_attempt_repository import InMemoryAttemptRepository
 from app.infrastructure.repositories.in_memory_case_repository import InMemoryCaseRepository
 from app.infrastructure.repositories.in_memory_hint_request_repository import (
@@ -31,7 +32,15 @@ def _isolated_repositories():
     must not depend on that; test_request_hint_use_case.py in tests/unit/
     is where the AI-hint-specific behavior (grounding, guardrails) is
     actually exercised, with a controllable fake.
+
+    Also resets the /hint rate limiter (app/api/rate_limiting.py) — it's a
+    process-wide in-memory counter by design (that's the whole point, it has
+    to survive across requests to actually limit anything), so without a
+    reset here a test earlier in the same pytest run would eat into a later,
+    unrelated test's budget purely because both go through TestClient(app)
+    in the same process.
     """
+    limiter.reset()
     case_repository = InMemoryCaseRepository(initial_cases=seed_cases())
     player_repository = InMemoryPlayerRepository()
     hint_request_repository = InMemoryHintRequestRepository()

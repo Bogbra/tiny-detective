@@ -8,6 +8,7 @@ dependencies = [
     "google-cloud-firestore>=2.28.0",
     "openai>=2.46.0",
     "python-dotenv>=1.2.2",
+    "slowapi>=0.1.10",
     "uvicorn[standard]>=0.51.0",
 ]
 

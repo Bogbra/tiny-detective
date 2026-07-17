@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// The backend (services/api) talks to Firestore exclusively through the
+// server-side google-cloud-firestore client, authenticated as the Cloud Run
+// runtime service account via project-level IAM — that path bypasses
+// Security Rules entirely, so these rules have zero effect on how the app
+// actually works. They exist to hard-deny the one thing this project has
+// never needed but also never explicitly ruled out: a client SDK (mobile,
+// web) talking to Firestore directly. The Flutter app never does this (see
+// docs/architecture.md's "The Flutter app never calls AI provider APIs or
+// Firestore directly" rule) — this closes the gap by making it fail even if
+// that rule were ever violated by mistake, not just documented.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

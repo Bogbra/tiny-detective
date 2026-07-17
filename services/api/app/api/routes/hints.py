@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.dependencies import get_case_repository, get_hint_assistant, get_hint_request_repository
+from app.api.rate_limiting import limiter
 from app.application.errors import CaseNotFoundError, HintLimitExceededError
 from app.application.ports import CaseRepository, HintAssistant, HintRequestRepository
 from app.application.use_cases.request_hint import RequestHint
@@ -12,7 +13,9 @@ router = APIRouter(tags=["hints"])
 
 
 @router.post("/cases/{case_id}/hint", response_model=HintResponse)
+@limiter.limit("5/minute")
 def request_hint(
+    request: Request,
     case_id: str,
     body: RequestHintRequest,
     case_repository: CaseRepository = Depends(get_case_repository),
