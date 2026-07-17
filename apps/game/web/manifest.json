@@ -1,11 +1,11 @@
 {
-    "name": "game",
-    "short_name": "game",
+    "name": "Tiny Detective AI",
+    "short_name": "Tiny Detective",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F8F4FF",
+    "theme_color": "#673AB7",
+    "description": "A cozy casual detective game: read a short mystery, inspect suspects and clues, ask a guarded AI assistant for hints, and submit your solution.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

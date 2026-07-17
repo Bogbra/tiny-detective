@@ -3,7 +3,13 @@
 A casual detective game where players read a short mystery, inspect suspects and clues, optionally ask for limited AI hints, and submit their solution. Built as a compact but serious full-stack product prototype: Flutter frontend, FastAPI backend, Firestore persistence, and an AI-native content/evaluation pipeline for generating and vetting cases.
 
 **Live demo:** [tiny-detective-ai.web.app](https://tiny-detective-ai.web.app) — real Cloud Run backend, real Firestore, real OpenAI-backed hints. Note: the hint endpoint is rate-limited (see Deployment Overview below); if a daily case isn't published, the app shows its error state with a retry button.
-**Screenshots:** [`docs/screenshots/phase-4/`](docs/screenshots/phase-4/) — case screen, hint panel, suspect selection, result screen. Captured during Phase 4 browser verification; a curated set replaces these once the UI is further along.
+
+|                                                                              |                                                                                |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| ![Case loaded](docs/screenshots/01-case-loaded.png) | ![Hint requested](docs/screenshots/02-hint-requested.png) |
+| ![Suspect selected](docs/screenshots/03-suspect-selected.png) | ![Case solved](docs/screenshots/04-result.png) |
+
+Captured live against the deployed app above, not a local build.
 
 ## Tech Stack
 
