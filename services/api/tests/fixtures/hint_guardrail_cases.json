@@ -1,0 +1,41 @@
+[
+  {
+    "name": "role_reference_without_clue_grounding_is_rejected",
+    "commentary": "The curator's statement doesn't fit the sensor evidence.",
+    "referencedClueText": "The archive motion sensor stayed inactive.",
+    "expected": "reject",
+    "note": "A role used referentially to identify a suspect ('the curator's statement'), not explained by the clue it's paired with. This is the false negative that shipped when role-checking was dropped entirely after a different false positive — see HintGuardrailPolicy's module docstring and docs/phase-reviews.md's Phase 6 entry."
+  },
+  {
+    "name": "role_word_grounded_in_referenced_clue_is_accepted",
+    "commentary": "Take another look at the visitor wristband found near the display case.",
+    "referencedClueText": "A visitor wristband was found near the display case.",
+    "expected": "accept",
+    "note": "The role word 'visitor' is part of the specific clue's own wording — quoting already-public case content, not identifying anyone. This is the original false positive that motivated the fix."
+  },
+  {
+    "name": "role_word_grounded_in_a_different_clue_is_still_rejected",
+    "commentary": "The curator seems to be lying about the timeline.",
+    "referencedClueText": "There were no signs of forced entry.",
+    "expected": "reject",
+    "note": "Grounding is scoped to the specific clue this hint is about, not 'any clue in the case' — a role appearing in some other clue's text doesn't excuse using it referentially here."
+  },
+  {
+    "name": "culprit_name_is_rejected",
+    "commentary": "Lea seems suspicious given the timing.",
+    "referencedClueText": "There were no signs of forced entry.",
+    "expected": "reject"
+  },
+  {
+    "name": "innocent_suspect_name_is_rejected",
+    "commentary": "Reconsider Mara's version of events.",
+    "referencedClueText": "There were no signs of forced entry.",
+    "expected": "reject"
+  },
+  {
+    "name": "generic_commentary_is_accepted",
+    "commentary": "Compare this clue with each suspect's statement carefully.",
+    "referencedClueText": "There were no signs of forced entry.",
+    "expected": "accept"
+  }
+]

@@ -1,0 +1,112 @@
+[
+  {
+    "name": "missing_solution_field",
+    "expected_failure_stage": "schema",
+    "candidate": {
+      "title": "The Case With No Ending",
+      "setting": "A quiet library.",
+      "problem": "A rare bookmark went missing.",
+      "suspects": [
+        { "name": "A", "role": "Librarian", "publicStatement": "I was shelving books.", "privateReasoning": "" },
+        { "name": "B", "role": "Student", "publicStatement": "I was studying quietly.", "privateReasoning": "" },
+        { "name": "C", "role": "Visitor", "publicStatement": "I was reading a magazine.", "privateReasoning": "" }
+      ],
+      "clues": ["A torn page corner was found.", "The window was slightly open.", "A pencil was left on the desk."]
+    }
+  },
+  {
+    "name": "too_few_suspects",
+    "expected_failure_stage": "schema",
+    "candidate": {
+      "title": "The Two-Suspect Puzzle",
+      "setting": "A small bakery.",
+      "problem": "A batch of cookies disappeared.",
+      "suspects": [
+        { "name": "A", "role": "Baker", "publicStatement": "I was icing the cake.", "privateReasoning": "" },
+        { "name": "B", "role": "Cashier", "publicStatement": "I was at the register.", "privateReasoning": "" }
+      ],
+      "clues": ["Crumbs were found by the back door.", "The oven was still warm.", "A delivery van was parked outside."],
+      "solution": { "culpritName": "A", "explanation": "The crumb trail leads to the kitchen." }
+    }
+  },
+  {
+    "name": "culprit_name_mismatch",
+    "expected_failure_stage": "schema",
+    "candidate": {
+      "title": "The Wrong Name Mystery",
+      "setting": "A garden party.",
+      "problem": "A prize rosette went missing.",
+      "suspects": [
+        { "name": "Ana", "role": "Gardener", "publicStatement": "I was watering the roses.", "privateReasoning": "" },
+        { "name": "Ben", "role": "Guest", "publicStatement": "I was near the punch bowl.", "privateReasoning": "" },
+        { "name": "Cleo", "role": "Organizer", "publicStatement": "I was greeting guests.", "privateReasoning": "" }
+      ],
+      "clues": ["A muddy footprint was near the trophy table.", "The ribbon box was left open.", "A glove was found by the gate."],
+      "solution": { "culpritName": "Someone Else", "explanation": "This name matches no suspect above." }
+    }
+  },
+  {
+    "name": "duplicate_suspect_names",
+    "expected_failure_stage": "rules",
+    "candidate": {
+      "title": "The Duplicate Trouble",
+      "setting": "A quiet office.",
+      "problem": "A stapler went missing from the front desk.",
+      "suspects": [
+        { "name": "Sam", "role": "Intern", "publicStatement": "I was filing papers all morning.", "privateReasoning": "" },
+        { "name": "Sam", "role": "Manager", "publicStatement": "I was in a meeting all morning.", "privateReasoning": "" },
+        { "name": "Priya", "role": "Receptionist", "publicStatement": "I was answering calls.", "privateReasoning": "" }
+      ],
+      "clues": ["A sticky note was found under the desk.", "The drawer was left open.", "A pen was missing its cap."],
+      "solution": { "culpritName": "Priya", "explanation": "Priya was closest to the desk." }
+    }
+  },
+  {
+    "name": "contains_unsafe_keyword",
+    "expected_failure_stage": "rules",
+    "candidate": {
+      "title": "The Case of the Missing Knife",
+      "setting": "A restaurant kitchen after hours.",
+      "problem": "A chef's knife went missing from the block.",
+      "suspects": [
+        { "name": "Theo", "role": "Sous Chef", "publicStatement": "I was cleaning the grill.", "privateReasoning": "" },
+        { "name": "Ivy", "role": "Waiter", "publicStatement": "I was closing out the register.", "privateReasoning": "" },
+        { "name": "Sal", "role": "Dishwasher", "publicStatement": "I was loading the dishwasher.", "privateReasoning": "" }
+      ],
+      "clues": ["The knife block had one empty slot.", "A towel was left on the counter.", "The back door was unlocked."],
+      "solution": { "culpritName": "Sal", "explanation": "Sal had access to the block last." }
+    }
+  },
+  {
+    "name": "hidden_only_solution",
+    "expected_failure_stage": "logic",
+    "candidate": {
+      "title": "The Unfair Ending",
+      "setting": "A quiet bookstore.",
+      "problem": "A signed first edition went missing from the shelf.",
+      "suspects": [
+        { "name": "Owen", "role": "Clerk", "publicStatement": "I was restocking the shelves.", "privateReasoning": "He restocked a different aisle the whole time." },
+        { "name": "Dana", "role": "Regular Customer", "publicStatement": "I was browsing the poetry section.", "privateReasoning": "She was actually browsing poetry the whole time." },
+        { "name": "Rick", "role": "Delivery Driver", "publicStatement": "I dropped off a package and left.", "privateReasoning": "He secretly kept a spare key from a previous delivery, which is never mentioned anywhere else in the case." }
+      ],
+      "clues": ["The shelf had a small gap.", "A receipt was found on the floor.", "The front bell didn't ring around closing time."],
+      "solution": { "culpritName": "Rick", "explanation": "Rick used a spare key that only he and the reader of this explanation know about." }
+    }
+  },
+  {
+    "name": "ambiguous_equally_likely_suspects",
+    "expected_failure_stage": "logic",
+    "candidate": {
+      "title": "The Coin Toss Case",
+      "setting": "A community swimming pool.",
+      "problem": "A pair of goggles went missing from the lost-and-found bin.",
+      "suspects": [
+        { "name": "Yara", "role": "Lifeguard", "publicStatement": "I was near the lost-and-found bin at 3pm.", "privateReasoning": "She was near the bin, no more or less than Finn." },
+        { "name": "Finn", "role": "Swim Coach", "publicStatement": "I was near the lost-and-found bin at 3pm too.", "privateReasoning": "He was near the bin, no more or less than Yara." },
+        { "name": "Cass", "role": "Front Desk", "publicStatement": "I was checking in guests across the pool.", "privateReasoning": "She was nowhere near the bin all afternoon." }
+      ],
+      "clues": ["A towel was left near the bin.", "The bin lid was left open.", "Two sets of wet footprints led away from the bin."],
+      "solution": { "culpritName": "Yara", "explanation": "Yara and Finn were both there, but Yara gets picked." }
+    }
+  }
+]

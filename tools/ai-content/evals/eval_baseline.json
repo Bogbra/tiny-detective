@@ -1,0 +1,333 @@
+{
+  "generatedAt": "2026-07-16T20:32:16.838836+00:00",
+  "model": "gpt-4o-mini",
+  "temperature": 0.0,
+  "repeatsPerFixture": 3,
+  "metrics": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "specificity": 1.0,
+    "truePositives": 8,
+    "falsePositives": 0,
+    "trueNegatives": 7,
+    "falseNegatives": 0
+  },
+  "recallByTier": {
+    "airtight": 1.0,
+    "casual": 1.0
+  },
+  "unstableFixtures": [],
+  "tokenUsage": {
+    "promptTokens": 40746,
+    "completionTokens": 940,
+    "totalTokens": 41686
+  },
+  "estimatedCostUsd": {
+    "thisRun": 0.0067,
+    "perCandidate": 0.00015,
+    "per50CandidateBatch": 0.01,
+    "pricingNote": "gpt-4o-mini list pricing at time of writing \u2014 verify against https://openai.com/api/pricing/ before relying on this"
+  },
+  "fixtures": [
+    {
+      "name": "museum_key",
+      "tier": "airtight",
+      "expectedAccept": true,
+      "expectedStage": null,
+      "verdicts": [
+        true,
+        true,
+        true
+      ],
+      "stagesFailed": [
+        null,
+        null,
+        null
+      ],
+      "stable": true,
+      "majorityAccept": true,
+      "correct": true,
+      "reachedAiEvaluation": true
+    },
+    {
+      "name": "library_bookmark",
+      "tier": "airtight",
+      "expectedAccept": true,
+      "expectedStage": null,
+      "verdicts": [
+        true,
+        true,
+        true
+      ],
+      "stagesFailed": [
+        null,
+        null,
+        null
+      ],
+      "stable": true,
+      "majorityAccept": true,
+      "correct": true,
+      "reachedAiEvaluation": true
+    },
+    {
+      "name": "birthday_cake_topper",
+      "tier": "airtight",
+      "expectedAccept": true,
+      "expectedStage": null,
+      "verdicts": [
+        true,
+        true,
+        true
+      ],
+      "stagesFailed": [
+        null,
+        null,
+        null
+      ],
+      "stable": true,
+      "majorityAccept": true,
+      "correct": true,
+      "reachedAiEvaluation": true
+    },
+    {
+      "name": "office_plant_contest",
+      "tier": "airtight",
+      "expectedAccept": true,
+      "expectedStage": null,
+      "verdicts": [
+        true,
+        true,
+        true
+      ],
+      "stagesFailed": [
+        null,
+        null,
+        null
+      ],
+      "stable": true,
+      "majorityAccept": true,
+      "correct": true,
+      "reachedAiEvaluation": true
+    },
+    {
+      "name": "bake_sale_cupcake",
+      "tier": "casual",
+      "expectedAccept": true,
+      "expectedStage": null,
+      "verdicts": [
+        true,
+        true,
+        true
+      ],
+      "stagesFailed": [
+        null,
+        null,
+        null
+      ],
+      "stable": true,
+      "majorityAccept": true,
+      "correct": true,
+      "reachedAiEvaluation": true
+    },
+    {
+      "name": "borrowed_umbrella",
+      "tier": "casual",
+      "expectedAccept": true,
+      "expectedStage": null,
+      "verdicts": [
+        true,
+        true,
+        true
+      ],
+      "stagesFailed": [
+        null,
+        null,
+        null
+      ],
+      "stable": true,
+      "majorityAccept": true,
+      "correct": true,
+      "reachedAiEvaluation": true
+    },
+    {
+      "name": "vanishing_class_pet_toy",
+      "tier": "casual",
+      "expectedAccept": true,
+      "expectedStage": null,
+      "verdicts": [
+        true,
+        true,
+        true
+      ],
+      "stagesFailed": [
+        null,
+        null,
+        null
+      ],
+      "stable": true,
+      "majorityAccept": true,
+      "correct": true,
+      "reachedAiEvaluation": true
+    },
+    {
+      "name": "bake_off_ballot_box",
+      "tier": "casual",
+      "expectedAccept": true,
+      "expectedStage": null,
+      "verdicts": [
+        true,
+        true,
+        true
+      ],
+      "stagesFailed": [
+        null,
+        null,
+        null
+      ],
+      "stable": true,
+      "majorityAccept": true,
+      "correct": true,
+      "reachedAiEvaluation": true
+    },
+    {
+      "name": "missing_solution_field",
+      "tier": null,
+      "expectedAccept": false,
+      "expectedStage": "schema",
+      "verdicts": [
+        false,
+        false,
+        false
+      ],
+      "stagesFailed": [
+        "schema",
+        "schema",
+        "schema"
+      ],
+      "stable": true,
+      "majorityAccept": false,
+      "correct": true,
+      "reachedAiEvaluation": false
+    },
+    {
+      "name": "too_few_suspects",
+      "tier": null,
+      "expectedAccept": false,
+      "expectedStage": "schema",
+      "verdicts": [
+        false,
+        false,
+        false
+      ],
+      "stagesFailed": [
+        "schema",
+        "schema",
+        "schema"
+      ],
+      "stable": true,
+      "majorityAccept": false,
+      "correct": true,
+      "reachedAiEvaluation": false
+    },
+    {
+      "name": "culprit_name_mismatch",
+      "tier": null,
+      "expectedAccept": false,
+      "expectedStage": "schema",
+      "verdicts": [
+        false,
+        false,
+        false
+      ],
+      "stagesFailed": [
+        "schema",
+        "schema",
+        "schema"
+      ],
+      "stable": true,
+      "majorityAccept": false,
+      "correct": true,
+      "reachedAiEvaluation": false
+    },
+    {
+      "name": "duplicate_suspect_names",
+      "tier": null,
+      "expectedAccept": false,
+      "expectedStage": "rules",
+      "verdicts": [
+        false,
+        false,
+        false
+      ],
+      "stagesFailed": [
+        "rules",
+        "rules",
+        "rules"
+      ],
+      "stable": true,
+      "majorityAccept": false,
+      "correct": true,
+      "reachedAiEvaluation": false
+    },
+    {
+      "name": "contains_unsafe_keyword",
+      "tier": null,
+      "expectedAccept": false,
+      "expectedStage": "rules",
+      "verdicts": [
+        false,
+        false,
+        false
+      ],
+      "stagesFailed": [
+        "rules",
+        "rules",
+        "rules"
+      ],
+      "stable": true,
+      "majorityAccept": false,
+      "correct": true,
+      "reachedAiEvaluation": false
+    },
+    {
+      "name": "hidden_only_solution",
+      "tier": null,
+      "expectedAccept": false,
+      "expectedStage": "logic",
+      "verdicts": [
+        false,
+        false,
+        false
+      ],
+      "stagesFailed": [
+        "logic",
+        "logic",
+        "logic"
+      ],
+      "stable": true,
+      "majorityAccept": false,
+      "correct": true,
+      "reachedAiEvaluation": true
+    },
+    {
+      "name": "ambiguous_equally_likely_suspects",
+      "tier": null,
+      "expectedAccept": false,
+      "expectedStage": "logic",
+      "verdicts": [
+        false,
+        false,
+        false
+      ],
+      "stagesFailed": [
+        "logic",
+        "logic",
+        "logic"
+      ],
+      "stable": true,
+      "majorityAccept": false,
+      "correct": true,
+      "reachedAiEvaluation": true
+    }
+  ]
+}

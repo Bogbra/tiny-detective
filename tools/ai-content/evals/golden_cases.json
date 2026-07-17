@@ -1,0 +1,321 @@
+[
+  {
+    "name": "museum_key",
+    "tier": "airtight",
+    "note": "Repaired after evaluate_cases.py's real logic judge correctly rejected the original spec wording for relying on an unstated premise (wristband = visitor) and an ambiguous clue (the inactive motion sensor could implicate OR exonerate Mara). Every suspect's alibi is now either directly confirmed or directly implicated by a clue that states its premise explicitly. See docs/phase-reviews.md's Phase 5 entry for the before/after.",
+    "candidate": {
+      "title": "The Missing Museum Key",
+      "setting": "A small town museum after closing time. All visitors receive a numbered wristband at the front desk when they arrive; staff and guards do not wear them.",
+      "problem": "An old display key disappeared from a locked glass case.",
+      "suspects": [
+        {
+          "name": "Mara",
+          "role": "Curator",
+          "publicStatement": "I was checking inventory in the archive.",
+          "privateReasoning": "Archive badge-scan logs confirm her keycard was used continuously in the archive during the theft window."
+        },
+        {
+          "name": "Jonas",
+          "role": "Night Guard",
+          "publicStatement": "I heard a noise near the east hallway.",
+          "privateReasoning": "Hallway security camera timestamps confirm he was patrolling there the entire time."
+        },
+        {
+          "name": "Lea",
+          "role": "Visitor",
+          "publicStatement": "I only came back because I lost my phone.",
+          "privateReasoning": "A numbered visitor wristband — the kind only issued at the front desk — was found snagged on the display case's latch."
+        }
+      ],
+      "clues": [
+        "A numbered visitor wristband — the kind only issued at the front desk — was found snagged on the display case's latch.",
+        "Archive badge-scan logs show Mara's keycard was used continuously in the archive during the theft window.",
+        "Hallway security camera timestamps confirm Jonas was patrolling the east hallway the entire time."
+      ],
+      "solution": {
+        "culpritName": "Lea",
+        "explanation": "Only visitors wear wristbands, and one was found snagged on the display case's latch — physical evidence Lea was there. Mara's badge logs and Jonas's camera timestamps independently confirm they were elsewhere the entire time, leaving Lea as the only suspect unaccounted for at the scene."
+      },
+      "tone": "cozy"
+    }
+  },
+  {
+    "name": "library_bookmark",
+    "tier": "airtight",
+    "candidate": {
+      "title": "The Library's Missing Bookmark",
+      "setting": "A quiet neighborhood library on a rainy afternoon.",
+      "problem": "A rare hand-painted bookmark went missing from inside a returned novel.",
+      "suspects": [
+        {
+          "name": "Owen",
+          "role": "Head Librarian",
+          "publicStatement": "I was sorting returns at the front desk all afternoon.",
+          "privateReasoning": "The checkout terminal log shows he scanned returns continuously the whole afternoon, confirming he never left the desk."
+        },
+        {
+          "name": "Priya",
+          "role": "Story-Time Volunteer",
+          "publicStatement": "I was reading to the kids' group in the back room.",
+          "privateReasoning": "Three parents in the story-time group confirm she never left their sight."
+        },
+        {
+          "name": "Dev",
+          "role": "Regular Patron",
+          "publicStatement": "I was just browsing the shelves near the returns cart.",
+          "privateReasoning": "He lingered by the returns cart exactly when the marked novel came back, and slipped the bookmark into his pocket."
+        }
+      ],
+      "clues": [
+        "The terminal log shows Owen scanned returns continuously the entire afternoon, never stepping away.",
+        "Three parents confirm Priya never left the story-time group the whole afternoon.",
+        "A librarian noticed Dev standing unusually close to the returns cart right as the marked novel was scanned in."
+      ],
+      "solution": {
+        "culpritName": "Dev",
+        "explanation": "Owen's terminal log and Priya's story-time witnesses both independently account for their whereabouts the entire afternoon. Only Dev was unaccounted for, and he was seen right at the returns cart when the novel came back."
+      },
+      "tone": "cozy"
+    }
+  },
+  {
+    "name": "birthday_cake_topper",
+    "tier": "airtight",
+    "candidate": {
+      "title": "The Birthday Cake Mix-Up",
+      "setting": "A community center hosting a kids' birthday party. A sign-in sheet at the door records everyone's arrival.",
+      "problem": "The topper decoration from the birthday cake went missing right before the candle-lighting.",
+      "suspects": [
+        {
+          "name": "Grace",
+          "role": "Party Planner",
+          "publicStatement": "I was setting up the balloon arch near the entrance.",
+          "privateReasoning": "The sign-in sheet and two parents both place her at the entrance the whole time."
+        },
+        {
+          "name": "Milo",
+          "role": "Birthday Kid's Cousin",
+          "publicStatement": "I was playing games in the side room the whole time.",
+          "privateReasoning": "The game room's supervisor confirms he never left."
+        },
+        {
+          "name": "Tara",
+          "role": "Caterer's Assistant",
+          "publicStatement": "I was just double-checking the cake before it went out.",
+          "privateReasoning": "She was alone with the cake for several minutes right before it was wheeled out, and pocketed the topper thinking it was a spare."
+        }
+      ],
+      "clues": [
+        "The sign-in sheet and two parents confirm Grace never left the entrance area.",
+        "The game room supervisor confirms Milo was there for the entire party.",
+        "The cake was left alone with only Tara present for several minutes before candle-lighting.",
+        "A smear of frosting matching the cake was found in Tara's apron pocket."
+      ],
+      "solution": {
+        "culpritName": "Tara",
+        "explanation": "Grace's and Milo's whereabouts are both independently confirmed by witnesses the entire time. Tara was alone with the cake right before the topper disappeared, and the frosting smear in her pocket confirms it."
+      },
+      "tone": "cozy"
+    }
+  },
+  {
+    "name": "office_plant_contest",
+    "tier": "airtight",
+    "candidate": {
+      "title": "The Office Plant Contest Mystery",
+      "setting": "An office break room hosting a weekly plant-growing contest, judged every Friday.",
+      "problem": "The winning ribbon from last week's prize-winning fern went missing.",
+      "suspects": [
+        {
+          "name": "Ines",
+          "role": "Office Manager",
+          "publicStatement": "I was in a meeting down the hall all morning.",
+          "privateReasoning": "Her video call log timestamps confirm she was on camera the whole time."
+        },
+        {
+          "name": "Boris",
+          "role": "Facilities",
+          "publicStatement": "I was replacing lightbulbs on the third floor.",
+          "privateReasoning": "The building's badge-access log shows his keycard was used on the third floor the entire morning."
+        },
+        {
+          "name": "Nadia",
+          "role": "New Hire",
+          "publicStatement": "I was watering my own plant on the contest table.",
+          "privateReasoning": "She lingered at the table far longer than watering required, and slipped the ribbon into her bag out of jealousy."
+        }
+      ],
+      "clues": [
+        "Ines's video call log shows her on camera in a meeting the entire morning.",
+        "Boris's badge-access log places him on the third floor the whole time.",
+        "Nadia was seen standing at the contest table for over ten minutes.",
+        "A loose thread matching the ribbon's fabric was found caught on Nadia's bag."
+      ],
+      "solution": {
+        "culpritName": "Nadia",
+        "explanation": "Ines's video call log and Boris's badge-access log both independently confirm they were elsewhere the entire time. Nadia lingered at the table far longer than needed, and the thread caught on her bag matches the missing ribbon."
+      },
+      "tone": "cozy"
+    }
+  },
+  {
+    "name": "bake_sale_cupcake",
+    "tier": "casual",
+    "candidate": {
+      "title": "The Vanishing Cupcake",
+      "setting": "A cozy school bake sale.",
+      "problem": "The last strawberry cupcake vanished before the raffle.",
+      "suspects": [
+        {
+          "name": "Nora",
+          "role": "Student Helper",
+          "publicStatement": "I was stacking napkins near the entrance.",
+          "privateReasoning": "She saw someone near the dessert table but forgot to mention it."
+        },
+        {
+          "name": "Ben",
+          "role": "Class Treasurer",
+          "publicStatement": "I counted coins at the front desk.",
+          "privateReasoning": "He was too far away to take it."
+        },
+        {
+          "name": "Mia",
+          "role": "Poster Designer",
+          "publicStatement": "I went back to fix a poster beside the dessert table.",
+          "privateReasoning": "Her story places her beside the cupcake at the right moment."
+        }
+      ],
+      "clues": [
+        "A pink frosting mark was found on the poster tape.",
+        "The coin box stayed closed the entire time.",
+        "Napkins were stacked neatly near the entrance.",
+        "The dessert table was briefly hidden behind a large poster board."
+      ],
+      "solution": {
+        "culpritName": "Mia",
+        "explanation": "Mia was beside the dessert table and the frosting mark on the poster tape connects her to the cupcake."
+      },
+      "tone": "cozy"
+    }
+  },
+  {
+    "name": "borrowed_umbrella",
+    "tier": "casual",
+    "candidate": {
+      "title": "The Case of the Borrowed Umbrella",
+      "setting": "An office break room on a rainy Monday morning.",
+      "problem": "Someone took the department's shared bright red umbrella without asking, and it never came back.",
+      "suspects": [
+        {
+          "name": "Wendell",
+          "role": "Accountant",
+          "publicStatement": "I stayed at my desk crunching numbers all morning.",
+          "privateReasoning": "He really did stay in all morning."
+        },
+        {
+          "name": "Priscilla",
+          "role": "Sales Rep",
+          "publicStatement": "I had back-to-back calls in the phone booth all morning.",
+          "privateReasoning": "She stepped out once between calls, long enough to grab the umbrella on her way to an outside client visit."
+        },
+        {
+          "name": "Dax",
+          "role": "Intern",
+          "publicStatement": "I was refilling the coffee machine near the break room.",
+          "privateReasoning": "He really was just refilling coffee, and doesn't even like the rain."
+        }
+      ],
+      "clues": [
+        "The umbrella stand by the door was empty by mid-morning.",
+        "Priscilla's calendar shows an outside client meeting scheduled for 10am that day.",
+        "A damp footprint trail led from the break room toward the parking garage, not toward any of the desks.",
+        "The coffee machine's maintenance log shows Dax was in the break room for only two minutes."
+      ],
+      "solution": {
+        "culpritName": "Priscilla",
+        "explanation": "Priscilla was the only one with a reason to head outside that morning, and the damp footprints leading to the parking garage — not toward anyone's desk — match someone leaving the building rather than returning to work."
+      },
+      "tone": "cozy"
+    }
+  },
+  {
+    "name": "vanishing_class_pet_toy",
+    "tier": "casual",
+    "candidate": {
+      "title": "The Vanishing Class Pet Toy",
+      "setting": "An elementary school classroom on a Friday afternoon.",
+      "problem": "The class hamster's favorite squeaky toy went missing from its cage before the weekend.",
+      "suspects": [
+        {
+          "name": "Mr. Alvarez",
+          "role": "Teacher",
+          "publicStatement": "I was grading papers at my desk all afternoon.",
+          "privateReasoning": "He really was grading papers, focused enough not to notice much else."
+        },
+        {
+          "name": "Ruby",
+          "role": "Class Pet Monitor",
+          "publicStatement": "I already fed the hamster and cleaned the cage before lunch.",
+          "privateReasoning": "She did her chores early and left the toy out on the cage lid by mistake."
+        },
+        {
+          "name": "Sam",
+          "role": "Student",
+          "publicStatement": "I was tidying the reading corner near the pet cage.",
+          "privateReasoning": "He spotted the toy left out and pocketed it because he liked the squeak, meaning to return it Monday."
+        }
+      ],
+      "clues": [
+        "The hamster's cage lid was left slightly open after lunch.",
+        "The squeaky toy was seen sitting on top of the cage lid, not inside, right before recess.",
+        "A faint squeaking sound was heard coming from the reading corner during quiet time.",
+        "Sam's backpack was zipped shut earlier than usual that day."
+      ],
+      "solution": {
+        "culpritName": "Sam",
+        "explanation": "The toy was left on top of the cage after Ruby's morning cleaning, well within reach of the reading corner. The squeaking heard from that corner, and Sam's oddly early-zipped backpack, point to him."
+      },
+      "tone": "cozy"
+    }
+  },
+  {
+    "name": "bake_off_ballot_box",
+    "tier": "casual",
+    "candidate": {
+      "title": "The Neighborhood Bake-Off Ballot Box",
+      "setting": "A neighborhood bake-off judged by a sealed ballot box on the community lawn.",
+      "problem": "One contestant's winning ballot went missing from the box before the final count.",
+      "suspects": [
+        {
+          "name": "Hazel",
+          "role": "Contest Organizer",
+          "publicStatement": "I was greeting guests at the entrance table the whole time.",
+          "privateReasoning": "She really was busy greeting guests, and barely glanced at the ballot box."
+        },
+        {
+          "name": "Otis",
+          "role": "Rival Baker",
+          "publicStatement": "I was chatting with judges near the dessert table.",
+          "privateReasoning": "He wandered off mid-conversation for a few minutes, right past the ballot box, to slip out a ballot for his rival."
+        },
+        {
+          "name": "Peg",
+          "role": "Volunteer",
+          "publicStatement": "I was refilling lemonade cups near the drinks table.",
+          "privateReasoning": "She really was just refilling cups all afternoon."
+        }
+      ],
+      "clues": [
+        "The ballot box lid was found slightly ajar after the bake-off ended.",
+        "Two judges recall Otis stepping away from their conversation for a few minutes.",
+        "The lemonade table, where Peg worked the whole time, is on the opposite side of the lawn from the ballot box.",
+        "A pen matching the one used to sign ballots was found in Otis's jacket pocket."
+      ],
+      "solution": {
+        "culpritName": "Otis",
+        "explanation": "Peg's post was too far from the ballot box the whole afternoon, and Hazel stayed at the entrance. Otis stepped away from the judges right around the time the box was tampered with, and the matching pen in his pocket seals it."
+      },
+      "tone": "cozy"
+    }
+  }
+]

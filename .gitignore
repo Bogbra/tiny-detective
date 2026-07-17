@@ -1,0 +1,42 @@
+# Flutter / Dart
+apps/game/.dart_tool/
+apps/game/.flutter-plugins
+apps/game/.flutter-plugins-dependencies
+apps/game/.packages
+apps/game/build/
+apps/game/.pub-cache/
+apps/game/.pub/
+apps/game/*.iml
+
+# Python / uv
+services/api/.venv/
+tools/ai-content/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# AI content tool runtime output (generated, not source content)
+tools/ai-content/drafts/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.local
+firebase-service-account*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+
+# Local-only project docs — never committed, per explicit instruction.
+# The project spec/instructions file for the coding assistant;
+# docs/ (architecture, ADRs, phase reviews, testing strategy, screenshots)
+# stays local reference material, not part of the repo history.
+/CLAUDE.md
+/docs/
