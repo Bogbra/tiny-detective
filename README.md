@@ -2,7 +2,7 @@
 
 A casual detective game where players read a short mystery, inspect suspects and clues, optionally ask for limited AI hints, and submit their solution. Built as a compact but serious full-stack product prototype: Flutter frontend, FastAPI backend, Firestore persistence, and an AI-native content/evaluation pipeline for generating and vetting cases.
 
-**Live demo:** TBD (added once Phase 8 deployment lands).
+**Live demo:** [tiny-detective-ai.web.app](https://tiny-detective-ai.web.app) — real Cloud Run backend, real Firestore, real OpenAI-backed hints. Note: the hint endpoint is rate-limited (see Deployment Overview below); if a daily case isn't published, the app shows its error state with a retry button.
 **Screenshots:** [`docs/screenshots/phase-4/`](docs/screenshots/phase-4/) — case screen, hint panel, suspect selection, result screen. Captured during Phase 4 browser verification; a curated set replaces these once the UI is further along.
 
 ## Tech Stack
@@ -11,8 +11,8 @@ A casual detective game where players read a short mystery, inspect suspects and
 - **Backend:** FastAPI, Pydantic, clean domain/application/infrastructure layering
 - **Persistence:** Firestore
 - **AI:** OpenAI API, backend/tooling-only (never called directly from the Flutter app) — case generation, multi-stage evaluation, and a grounded, guardrailed in-game hint assistant
-- **CI/CD:** GitHub Actions
-- **Deployment (planned):** Firebase Hosting (frontend), Cloud Run (backend)
+- **CI/CD:** GitHub Actions — CI (5 jobs: frontend, backend, contract, AI-tool, Docker build) + Deploy (Cloud Run + Firebase Hosting, gated on CI passing)
+- **Deployment:** Firebase Hosting (frontend), Cloud Run (backend), both live
 
 ## Architecture
 
@@ -116,7 +116,7 @@ AI is part of the product architecture in three places: case generation, case ev
 
 ## Deployment Overview
 
-Planned: Firebase Hosting for the Flutter web build, Cloud Run for the FastAPI backend, Firestore for persistence, GitHub Actions for CI/CD. Details: [`docs/deployment.md`](docs/deployment.md) (filled in from Phase 8 onward).
+Live: Firebase Hosting for the Flutter web build, Cloud Run for the FastAPI backend (Workload Identity Federation, no stored deploy key), real Firestore, GitHub Actions for CI/CD (`ci.yml` gates `deploy.yml` via `workflow_run`). The public, OpenAI-backed `/hint` endpoint is rate-limited per IP, Cloud Run is capped at 3 instances, and a small budget alert exists as a backstop. Full detail and the reasoning behind each choice: [`docs/deployment.md`](docs/deployment.md), [ADR-0006](docs/architecture-decisions/ADR-0006-deployment-topology.md).
 
 ## Main Trade-offs
 
@@ -134,8 +134,11 @@ Planned: Firebase Hosting for the Flutter web build, Cloud Run for the FastAPI b
 - **The hint guardrail scans only the AI-generated commentary, and checks names unconditionally but roles only when they're not grounded in the specific clue being referenced** — a role is exactly as identifying as a name (this project's roles are unique per case), but a clue can legitimately share a word with a role (e.g. "a visitor wristband") without that being an accusation. A names-only guardrail was tried first and reopened a real gap; a role-or-name guardrail with no grounding exception false-positived on legitimate hints. See [ADR-0004](docs/architecture-decisions/ADR-0004-hint-assistant-guardrails.md)'s addendum for the full back-and-forth.
 - **Tests can't accidentally call real external services** — `get_openai_client()` (both `services/api` and `tools/ai-content`) raises, and Firestore dependency wiring silently falls back to in-memory, whenever `"pytest" in sys.modules` — checked that way rather than the more common `PYTEST_CURRENT_TEST`, because the latter is only set during individual test execution, not during pytest's collection phase. That gap was found by deliberately stopping the emulator mid-development and re-running the suite: it hung for ~45 seconds instead of failing fast. See [ADR-0005](docs/architecture-decisions/ADR-0005-firestore-data-model.md)'s addendum.
 - **All repository/AI-client providers in `app/api/dependencies.py` are `@lru_cache`d, not built at module-import time** — a network client (Firestore, OpenAI) is only ever constructed the first time a route actually resolves that dependency, not merely by importing the module. This started as an eager module-level singleton; changed after review flagged that shape as the actual root cause behind the pytest-hang bug above, not just something the guard needed to survive. See [ADR-0005](docs/architecture-decisions/ADR-0005-firestore-data-model.md)'s second addendum.
-- **Emulator-only verification**: everything Firestore-related was checked against the local emulator, which enforces neither composite indexes nor Security Rules — a query that works locally could still fail against real Firestore on a missing index. "Locally verified, index/rules behavior unverified" — see [`docs/scalability.md`](docs/scalability.md).
+- **Emulator-only verification held through Phase 7; Phase 8's real deploy closed part of that gap** — today's query shapes now confirmed against real Firestore (no missing-index errors), but `firestore.rules` enforcement itself is still unexercised since the backend's server SDK bypasses Security Rules via IAM entirely. See [`docs/scalability.md`](docs/scalability.md).
+- **Workload Identity Federation for Cloud Run, a stored service-account key for Firebase Hosting** — not one blanket "no keys" principle, an honest trade-off between two ecosystems' idiomatic deploy-auth paths. See [ADR-0006](docs/architecture-decisions/ADR-0006-deployment-topology.md).
+- **One `deploy.yml` with two `needs:`-ordered jobs, not three separate `workflow_run`-chained workflow files** — the project spec's monorepo listing names `deploy-web.yml`/`deploy-api.yml` separately; simplified after review since a 3-deep trigger chain is harder to debug and a broken link is easy to miss in the Actions UI, for no real benefit at this project's size. See [ADR-0006](docs/architecture-decisions/ADR-0006-deployment-topology.md).
+- **`contract-checks` in CI deliberately re-runs a subset of what `backend-checks` already covers** — the project spec names it as its own job, and a separately-labeled failure states what broke more precisely than a generic backend-checks failure would, for a small, accepted amount of duplicated CI time.
 
 ## Project Status
 
-Phase 7 (Persistence and Firestore) — in progress. See the project spec's "Test Planning By Phase" for the full roadmap.
+All 8 phases complete. `docs/phase-reviews.md` (local, not published — see `.gitignore`) has the full phase-by-phase review history; [`docs/final-review.md`](docs/final-review.md) has the closing architecture and quality review.

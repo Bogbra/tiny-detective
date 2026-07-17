@@ -76,16 +76,18 @@ Implemented in Phase 7. `CaseRepository`/`PlayerRepository`/`HintRequestReposito
 
 ## Deployment Topology
 
+Implemented in Phase 8 — live, not just planned. Full detail: [`docs/deployment.md`](deployment.md), decisions: [ADR-0006](architecture-decisions/ADR-0006-deployment-topology.md).
+
 ```text
-Firebase Hosting  -> Flutter Web App (apps/game)
-Cloud Run         -> FastAPI Backend (services/api)
-Firestore         -> cases, players, attempts, hints
-GitHub Actions    -> CI/CD (.github/workflows/ci.yml)
+Firebase Hosting  -> Flutter Web App (apps/game)     https://tiny-detective-ai.web.app
+Cloud Run         -> FastAPI Backend (services/api)  https://tiny-detective-api-n7fn34d2jq-ew.a.run.app
+Firestore         -> cases, players, attempts, hints (native mode, europe-west1)
+GitHub Actions    -> CI (.github/workflows/ci.yml) + Deploy (.github/workflows/deploy.yml)
 ```
 
-Locally: a Firestore emulator (Docker) stands in for real Firestore — see `README.md`'s backend setup section.
+Locally: a Firestore emulator (Docker) stands in for real Firestore — see `README.md`'s backend setup section. The deployed backend uses real Firestore, gated on the same `GOOGLE_CLOUD_PROJECT` env var the emulator setup uses locally.
 
-Optional later: Cloud Scheduler → Cloud Run Job for generating/evaluating new cases.
+Optional later: Cloud Scheduler → Cloud Run Job for generating/evaluating new cases (daily-case publishing is still a manual admin call, per `docs/deployment.md`).
 
 ## Scalability Notes
 
