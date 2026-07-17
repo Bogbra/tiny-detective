@@ -66,7 +66,7 @@ jobs:
             --service-account=${{ vars.RUNTIME_SA_EMAIL }}
             --max-instances=3
             --min-instances=0
-            --set-env-vars=GOOGLE_CLOUD_PROJECT=${{ vars.GCP_PROJECT_ID }},ALLOWED_ORIGINS=https://${{ vars.GCP_PROJECT_ID }}.web.app
+            --set-env-vars=GOOGLE_CLOUD_PROJECT=${{ vars.GCP_PROJECT_ID }},ALLOWED_ORIGINS=https://${{ vars.GCP_PROJECT_ID }}.web.app,REQUIRE_PERSISTENT_STORAGE=true
             --set-secrets=ADMIN_API_TOKEN=ADMIN_API_TOKEN:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest
 
       - name: Deploy Firestore rules and indexes
