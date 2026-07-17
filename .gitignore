@@ -34,9 +34,14 @@ firebase-service-account*.json
 # OS
 .DS_Store
 
-# Local-only project docs — never committed, per explicit instruction.
-# The project spec/instructions file for the coding assistant;
-# docs/ (architecture, ADRs, phase reviews, testing strategy, screenshots)
-# stays local reference material, not part of the repo history.
+# The project spec/instructions file for the coding assistant — never
+# committed; it directly instructs the AI assistant by name throughout.
 /CLAUDE.md
-/docs/
+
+# Most of docs/ is now committed (it's what README links to: architecture,
+# ADRs, AI workflow, deployment, scalability, screenshots). These specific
+# files stay local-only — internal review process artifacts, not meant to
+# be public reading.
+/docs/phase-reviews.md
+/docs/product-notes.md
+/docs/testing-strategy.md
