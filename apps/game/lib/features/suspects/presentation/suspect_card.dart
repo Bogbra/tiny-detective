@@ -31,7 +31,10 @@ class SuspectCard extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         title: Text(suspect.name, style: textStyle),
-        subtitle: Text('${suspect.role}\n"${suspect.publicStatement}"', style: textStyle),
+        subtitle: Text(
+          '${suspect.role}\n"${suspect.publicStatement}"',
+          style: textStyle,
+        ),
         isThreeLine: true,
         selected: isSelected,
         trailing: isSelected

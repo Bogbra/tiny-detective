@@ -29,9 +29,7 @@ class CaseConsistencyPolicy:
 
         culprits = [s for s in case.suspects if s.is_culprit]
         if len(culprits) != 1:
-            violations.append(
-                f"exactly one suspect must be marked as the culprit, found {len(culprits)}"
-            )
+            violations.append(f"exactly one suspect must be marked as the culprit, found {len(culprits)}")
         elif culprits[0].suspect_id != case.solution.culprit_suspect_id:
             violations.append("solution.culprit_suspect_id must match the suspect marked as culprit")
 

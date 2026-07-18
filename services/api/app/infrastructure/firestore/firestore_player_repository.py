@@ -18,6 +18,4 @@ class FirestorePlayerRepository:
         return document_to_player(player_id, doc.to_dict())
 
     def save(self, player: Player) -> None:
-        self._client.collection(PLAYERS_COLLECTION).document(player.player_id).set(
-            player_to_document(player)
-        )
+        self._client.collection(PLAYERS_COLLECTION).document(player.player_id).set(player_to_document(player))

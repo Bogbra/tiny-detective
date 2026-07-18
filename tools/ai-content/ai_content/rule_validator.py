@@ -55,9 +55,7 @@ def validate_rules(candidate: CaseCandidate) -> RuleValidationResult:
     reasons: list[str] = []
 
     if not (MIN_TITLE_LENGTH <= len(candidate.title) <= MAX_TITLE_LENGTH):
-        reasons.append(
-            f"title length must be between {MIN_TITLE_LENGTH} and {MAX_TITLE_LENGTH} characters"
-        )
+        reasons.append(f"title length must be between {MIN_TITLE_LENGTH} and {MAX_TITLE_LENGTH} characters")
 
     if not (MIN_CLUES <= len(candidate.clues) <= MAX_CLUES):
         reasons.append(f"clue count must be between {MIN_CLUES} and {MAX_CLUES}")

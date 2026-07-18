@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.domain.entities.attempt import Attempt
 from app.infrastructure.repositories.in_memory_attempt_repository import InMemoryAttemptRepository
@@ -13,7 +13,7 @@ def _attempt(player_id="player-1", case_id="case_museum_001", **overrides) -> At
         correct=True,
         score=100,
         hints_used=0,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     defaults.update(overrides)
     return Attempt(**defaults)

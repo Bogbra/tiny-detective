@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.domain.entities.player import Player
 from app.infrastructure.firestore.player_mapper import document_to_player, player_to_document
@@ -10,8 +10,8 @@ def test_round_trip_preserves_all_fields():
         display_name="Alex",
         streak=3,
         total_score=250,
-        created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
-        last_played_at=datetime(2026, 1, 2, tzinfo=timezone.utc),
+        created_at=datetime(2026, 1, 1, tzinfo=UTC),
+        last_played_at=datetime(2026, 1, 2, tzinfo=UTC),
     )
 
     document = player_to_document(player)

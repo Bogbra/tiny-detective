@@ -8,9 +8,7 @@ from app.domain.value_objects.publish_status import PublishStatus
 
 
 class PublishDailyCase:
-    def __init__(
-        self, case_repository: CaseRepository, publish_policy: PublishPolicy | None = None
-    ) -> None:
+    def __init__(self, case_repository: CaseRepository, publish_policy: PublishPolicy | None = None) -> None:
         self._case_repository = case_repository
         self._publish_policy = publish_policy or PublishPolicy()
 

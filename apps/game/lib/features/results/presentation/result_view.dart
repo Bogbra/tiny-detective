@@ -21,7 +21,8 @@ class ResultView extends StatefulWidget {
   State<ResultView> createState() => _ResultViewState();
 }
 
-class _ResultViewState extends State<ResultView> with SingleTickerProviderStateMixin {
+class _ResultViewState extends State<ResultView>
+    with SingleTickerProviderStateMixin {
   late final ConfettiController _confettiController;
   late final AnimationController _pulseController;
   late final Animation<double> _pulseScale;
@@ -35,15 +36,16 @@ class _ResultViewState extends State<ResultView> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _confettiController = ConfettiController(duration: const Duration(milliseconds: 1200));
+    _confettiController = ConfettiController(
+      duration: const Duration(milliseconds: 1200),
+    );
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 450),
     );
-    _pulseScale = Tween<double>(
-      begin: 0.7,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _pulseController, curve: Curves.elasticOut));
+    _pulseScale = Tween<double>(begin: 0.7, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.elasticOut),
+    );
 
     _pulseController.forward();
     if (widget.result.correct && !widget.result.alreadySolved) {
@@ -73,7 +75,9 @@ class _ResultViewState extends State<ResultView> with SingleTickerProviderStateM
                   scale: _pulseScale,
                   child: Icon(
                     widget.result.correct ? Icons.check_circle : Icons.cancel,
-                    color: widget.result.correct ? AppColors.success : AppColors.failure,
+                    color: widget.result.correct
+                        ? AppColors.success
+                        : AppColors.failure,
                     size: 64,
                   ),
                 ),
@@ -88,9 +92,15 @@ class _ResultViewState extends State<ResultView> with SingleTickerProviderStateM
                 const SizedBox(height: 8),
                 Text(widget.result.feedback, textAlign: TextAlign.center),
                 const SizedBox(height: 16),
-                Text(widget.result.solutionExplanation, textAlign: TextAlign.center),
+                Text(
+                  widget.result.solutionExplanation,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 16),
-                _AnimatedScoreLine(score: widget.result.score, streak: widget.result.streak),
+                _AnimatedScoreLine(
+                  score: widget.result.score,
+                  streak: widget.result.streak,
+                ),
                 if (_isMilestone) ...[
                   const SizedBox(height: 8),
                   Text(

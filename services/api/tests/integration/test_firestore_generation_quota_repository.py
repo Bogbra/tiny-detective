@@ -10,7 +10,7 @@ that it holds at production scale.
 """
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 
 from app.infrastructure.firestore.firestore_generation_quota_repository import (
     RATE_LIMITS_COLLECTION,
@@ -33,15 +33,13 @@ def test_expire_at_is_written_for_ttl_and_scoped_to_the_specific_day(firestore_c
     repo.try_reserve_attempt(TODAY)
 
     raw = firestore_client.collection(RATE_LIMITS_COLLECTION).document(_document_id(TODAY)).get().to_dict()
-    expected = datetime.combine(TODAY, time.min, tzinfo=timezone.utc) + timedelta(days=7)
+    expected = datetime.combine(TODAY, time.min, tzinfo=UTC) + timedelta(days=7)
     assert raw["expireAt"] == expected
 
 
 @requires_firestore_emulator
 def test_try_consume_success_allowed_under_cap(firestore_client):
-    repo = FirestoreDailyGenerationQuotaRepository(
-        client=firestore_client, success_cap=2, attempt_cap=10
-    )
+    repo = FirestoreDailyGenerationQuotaRepository(client=firestore_client, success_cap=2, attempt_cap=10)
 
     assert repo.try_consume_success(TODAY) is True
     assert repo.try_consume_success(TODAY) is True
@@ -50,9 +48,7 @@ def test_try_consume_success_allowed_under_cap(firestore_client):
 
 @requires_firestore_emulator
 def test_try_consume_success_rejected_at_cap(firestore_client):
-    repo = FirestoreDailyGenerationQuotaRepository(
-        client=firestore_client, success_cap=2, attempt_cap=10
-    )
+    repo = FirestoreDailyGenerationQuotaRepository(client=firestore_client, success_cap=2, attempt_cap=10)
     repo.try_consume_success(TODAY)
     repo.try_consume_success(TODAY)
 
@@ -62,9 +58,7 @@ def test_try_consume_success_rejected_at_cap(firestore_client):
 
 @requires_firestore_emulator
 def test_try_reserve_attempt_independent_counter(firestore_client):
-    repo = FirestoreDailyGenerationQuotaRepository(
-        client=firestore_client, success_cap=1, attempt_cap=5
-    )
+    repo = FirestoreDailyGenerationQuotaRepository(client=firestore_client, success_cap=1, attempt_cap=5)
     repo.try_consume_success(TODAY)
 
     assert repo.try_reserve_attempt(TODAY) is True
@@ -75,9 +69,7 @@ def test_try_reserve_attempt_independent_counter(firestore_client):
 
 @requires_firestore_emulator
 def test_counters_reset_on_a_new_utc_calendar_day(firestore_client):
-    repo = FirestoreDailyGenerationQuotaRepository(
-        client=firestore_client, success_cap=1, attempt_cap=10
-    )
+    repo = FirestoreDailyGenerationQuotaRepository(client=firestore_client, success_cap=1, attempt_cap=10)
     assert repo.try_consume_success(TODAY) is True
     assert repo.try_consume_success(TODAY) is False
 
@@ -100,9 +92,7 @@ def test_concurrent_try_consume_success_does_not_overcount(firestore_client):
     though a slot was technically free — found by running this test, not
     assumed; see FirestoreDailyGenerationQuotaRepository._try_increment's
     comment. So sum(results) <= 10 is the honest, correct assertion."""
-    repo = FirestoreDailyGenerationQuotaRepository(
-        client=firestore_client, success_cap=10, attempt_cap=1000
-    )
+    repo = FirestoreDailyGenerationQuotaRepository(client=firestore_client, success_cap=10, attempt_cap=1000)
 
     with ThreadPoolExecutor(max_workers=20) as pool:
         results = list(pool.map(lambda _: repo.try_consume_success(TODAY), range(20)))

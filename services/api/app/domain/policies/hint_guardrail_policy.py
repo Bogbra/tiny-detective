@@ -35,9 +35,7 @@ class GuardrailResult:
 
 
 class HintGuardrailPolicy:
-    def check(
-        self, hint_text: str, case: DetectiveCase, referenced_clue_text: str = ""
-    ) -> GuardrailResult:
+    def check(self, hint_text: str, case: DetectiveCase, referenced_clue_text: str = "") -> GuardrailResult:
         lowered = hint_text.lower()
         referenced_clue_lowered = referenced_clue_text.lower()
         violated: list[str] = []

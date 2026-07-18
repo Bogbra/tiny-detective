@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from app.infrastructure.firestore.ttl import (
     ATTEMPT_AND_HINT_RETENTION,
@@ -8,8 +8,8 @@ from app.infrastructure.firestore.ttl import (
 
 
 def test_expire_at_adds_retention_to_base():
-    base = datetime(2026, 1, 1, tzinfo=timezone.utc)
-    assert expire_at(base, timedelta(days=10)) == datetime(2026, 1, 11, tzinfo=timezone.utc)
+    base = datetime(2026, 1, 1, tzinfo=UTC)
+    assert expire_at(base, timedelta(days=10)) == datetime(2026, 1, 11, tzinfo=UTC)
 
 
 def test_expire_at_returns_none_for_none_base():

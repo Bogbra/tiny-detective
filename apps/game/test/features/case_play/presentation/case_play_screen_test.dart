@@ -19,7 +19,9 @@ Widget _wrap(FakeCaseRepository repository) {
 }
 
 void main() {
-  testWidgets('shows a loading indicator while the daily case loads', (tester) async {
+  testWidgets('shows a loading indicator while the daily case loads', (
+    tester,
+  ) async {
     final repository = FakeCaseRepository(dailyCase: sampleCase());
 
     await tester.pumpWidget(_wrap(repository));
@@ -27,7 +29,9 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
-  testWidgets('renders the case, suspects and clues once loaded', (tester) async {
+  testWidgets('renders the case, suspects and clues once loaded', (
+    tester,
+  ) async {
     final repository = FakeCaseRepository(dailyCase: sampleCase());
 
     await tester.pumpWidget(_wrap(repository));
@@ -41,7 +45,9 @@ void main() {
   });
 
   testWidgets('shows an error state and recovers via retry', (tester) async {
-    final repository = FakeCaseRepository(throwOnGetDailyCase: Exception('network down'));
+    final repository = FakeCaseRepository(
+      throwOnGetDailyCase: Exception('network down'),
+    );
 
     await tester.pumpWidget(_wrap(repository));
     await tester.pumpAndSettle();
@@ -74,12 +80,17 @@ void main() {
     await tester.tap(find.text('Get a hint'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Compare each suspect statement with the clues.'), findsOneWidget);
+    expect(
+      find.text('Compare each suspect statement with the clues.'),
+      findsOneWidget,
+    );
     expect(find.text('2 hint(s) remaining'), findsOneWidget);
     expect(repository.hintCalls, 1);
   });
 
-  testWidgets('selecting a suspect and submitting shows the result screen', (tester) async {
+  testWidgets('selecting a suspect and submitting shows the result screen', (
+    tester,
+  ) async {
     final repository = FakeCaseRepository(
       dailyCase: sampleCase(),
       result: const CaseResult(

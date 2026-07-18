@@ -1,6 +1,6 @@
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.application.errors import CaseNotFoundError, HintLimitExceededError, PlayerNotFoundError
 from app.application.ports import CaseRepository, HintAssistant, HintRequestRepository, PlayerRepository
@@ -11,8 +11,7 @@ from app.domain.policies.hint_policy import HintPolicy
 from app.domain.value_objects.case_id import CaseId
 
 FALLBACK_HINT_TEXT = (
-    "Compare each suspect's statement with the physical clues. "
-    "One statement fits less well than the others."
+    "Compare each suspect's statement with the physical clues. One statement fits less well than the others."
 )
 
 
@@ -62,9 +61,7 @@ class RequestHint:
 
         hints_used = self._hint_request_repository.count_for_case(case_id, player_id)
         if not self._hint_policy.can_request_hint(hints_used):
-            raise HintLimitExceededError(
-                f"hint limit of {self._hint_policy.max_hints} reached for this case"
-            )
+            raise HintLimitExceededError(f"hint limit of {self._hint_policy.max_hints} reached for this case")
 
         new_hints_used = hints_used + 1
         generated = self._generate_hint_content(case, new_hints_used)
@@ -78,7 +75,7 @@ class RequestHint:
                 text=generated.text,
                 grounded_in_clue_ids=generated.grounded_in_clue_ids,
                 passed_guardrails=generated.passed_guardrails,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
         )
 
@@ -99,9 +96,7 @@ class RequestHint:
         if assistant_hint is None:
             return _GeneratedHint(FALLBACK_HINT_TEXT, (), False)
 
-        matching_clue = next(
-            (c for c in public_case.clues if c.clue_id == assistant_hint.clue_id), None
-        )
+        matching_clue = next((c for c in public_case.clues if c.clue_id == assistant_hint.clue_id), None)
         if matching_clue is None:
             # The assistant referenced a clue that doesn't exist in this case —
             # can't ground the hint in real case data, so don't trust it.

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -48,9 +48,7 @@ def get_daily_case(
 
 
 @router.get("/cases/{case_id}", response_model=CaseResponse)
-def get_case(
-    case_id: str, case_repository: CaseRepository = Depends(get_case_repository)
-) -> CaseResponse:
+def get_case(case_id: str, case_repository: CaseRepository = Depends(get_case_repository)) -> CaseResponse:
     try:
         public_case = GetCase(case_repository).execute(CaseId(case_id))
     except CaseNotFoundError as exc:
@@ -69,9 +67,7 @@ def submit_solution(
     hint_request_repository: HintRequestRepository = Depends(get_hint_request_repository),
     attempt_repository: AttemptRepository = Depends(get_attempt_repository),
 ) -> SubmitSolutionResponse:
-    use_case = SubmitSolution(
-        case_repository, player_repository, hint_request_repository, attempt_repository
-    )
+    use_case = SubmitSolution(case_repository, player_repository, hint_request_repository, attempt_repository)
     try:
         result = use_case.execute(CaseId(case_id), body.player_id, body.suspect_id)
     except CaseNotFoundError as exc:
@@ -106,7 +102,7 @@ async def generate_case(
     case_repository: CaseRepository = Depends(get_case_repository),
     quota_repository: DailyGenerationQuotaRepository = Depends(get_generation_quota_repository),
 ):
-    today = datetime.now(timezone.utc).date()
+    today = datetime.now(UTC).date()
 
     # Fail fast with zero LLM calls if the day's budget is already gone —
     # a plain 429, not an SSE stream, so the frontend handles it exactly

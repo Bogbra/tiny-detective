@@ -36,10 +36,7 @@ def test_returns_none_when_project_env_var_unset(monkeypatch):
 def test_builds_full_resource_name(monkeypatch):
     monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "tiny-detective-ai")
     request = _make_request({"x-cloud-trace-context": "105445aa7843bc8bf206b120001000/1;o=1"})
-    assert (
-        _trace_resource_name(request)
-        == "projects/tiny-detective-ai/traces/105445aa7843bc8bf206b120001000"
-    )
+    assert _trace_resource_name(request) == "projects/tiny-detective-ai/traces/105445aa7843bc8bf206b120001000"
 
 
 def test_handles_header_with_no_slash(monkeypatch):

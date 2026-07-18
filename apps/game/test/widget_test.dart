@@ -7,7 +7,9 @@ import 'features/case_play/presentation/fake_case_repository.dart';
 import 'features/case_play/presentation/sample_case.dart';
 
 void main() {
-  testWidgets('app boots and renders the daily case end to end', (tester) async {
+  testWidgets('app boots and renders the daily case end to end', (
+    tester,
+  ) async {
     final repository = FakeCaseRepository(dailyCase: sampleCase());
 
     await tester.pumpWidget(

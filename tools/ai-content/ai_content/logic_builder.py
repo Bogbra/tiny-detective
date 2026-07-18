@@ -77,7 +77,7 @@ def build_case_logic(rng: random.Random) -> CaseLogic:
     culprit_claim = rng.choice(template.alibi_locations)
 
     suspects: list[SuspectLogic] = []
-    for token, role_idx in zip(SUSPECT_TOKENS, role_indices):
+    for token, role_idx in zip(SUSPECT_TOKENS, role_indices, strict=True):
         role = template.roles[role_idx]
         signature_item = template.signature_items[role_idx]
         is_culprit = token == culprit_token
@@ -118,9 +118,7 @@ def build_case_logic(rng: random.Random) -> CaseLogic:
                     required_phrases=(s.signature_item, s.real_location),
                 )
             )
-    clues.append(
-        ClueLogic(clue_id="clue_neutral", kind="neutral", subject_token=None, required_phrases=())
-    )
+    clues.append(ClueLogic(clue_id="clue_neutral", kind="neutral", subject_token=None, required_phrases=()))
 
     case_logic = CaseLogic(
         template=template,
@@ -155,7 +153,6 @@ def solve(case_logic: CaseLogic) -> str:
     ]
     if len(candidates) != 1:
         raise LogicBuildError(
-            f"expected exactly one suspect at the incident location without an alibi, "
-            f"found {candidates!r}"
+            f"expected exactly one suspect at the incident location without an alibi, found {candidates!r}"
         )
     return candidates[0]

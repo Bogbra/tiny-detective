@@ -13,9 +13,7 @@ def test_hint_limit_enforced(client):
 def test_hint_response_shape(client):
     player = client.post("/players").json()
 
-    response = client.post(
-        "/cases/case_museum_001/hint", json={"playerId": player["playerId"]}
-    )
+    response = client.post("/cases/case_museum_001/hint", json={"playerId": player["playerId"]})
 
     assert response.status_code == 200
     body = response.json()
@@ -25,16 +23,12 @@ def test_hint_response_shape(client):
 
 
 def test_hint_rejects_oversized_player_id(client):
-    response = client.post(
-        "/cases/case_museum_001/hint", json={"playerId": "p" * 65}
-    )
+    response = client.post("/cases/case_museum_001/hint", json={"playerId": "p" * 65})
     assert response.status_code == 422
 
 
 def test_hint_rejects_player_id_with_invalid_characters(client):
-    response = client.post(
-        "/cases/case_museum_001/hint", json={"playerId": "../etc/passwd"}
-    )
+    response = client.post("/cases/case_museum_001/hint", json={"playerId": "../etc/passwd"})
     assert response.status_code == 422
 
 
@@ -42,9 +36,7 @@ def test_hint_for_unregistered_player_returns_404(client):
     """Closes the hint-limit bypass: a random UUID that was never POSTed to
     /players must not get its own fresh hint budget just by being used as
     playerId — see task 2 of the security/ops audit."""
-    response = client.post(
-        "/cases/case_museum_001/hint", json={"playerId": "never-registered-player-id"}
-    )
+    response = client.post("/cases/case_museum_001/hint", json={"playerId": "never-registered-player-id"})
 
     assert response.status_code == 404
 
@@ -52,9 +44,7 @@ def test_hint_for_unregistered_player_returns_404(client):
 def test_hint_for_unknown_case_returns_404(client):
     player = client.post("/players").json()
 
-    response = client.post(
-        "/cases/does-not-exist/hint", json={"playerId": player["playerId"]}
-    )
+    response = client.post("/cases/does-not-exist/hint", json={"playerId": player["playerId"]})
 
     assert response.status_code == 404
 

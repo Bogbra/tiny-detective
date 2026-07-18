@@ -11,7 +11,7 @@ import logging
 import uuid
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from app.application.ports import CaseGenerationAdapter, CaseRepository, DailyGenerationQuotaRepository
 from app.domain.entities.clue import Clue
@@ -117,7 +117,10 @@ class GenerateCase:
             completion_tokens += logic_outcome.completion_tokens
             if not logic_outcome.passed:
                 yield GenerationEvent(
-                    step="logic_check", status="rejected", detail="; ".join(logic_outcome.reasons), attempt=attempt
+                    step="logic_check",
+                    status="rejected",
+                    detail="; ".join(logic_outcome.reasons),
+                    attempt=attempt,
                 )
                 continue
 
@@ -140,7 +143,10 @@ class GenerateCase:
             completion_tokens += safety_outcome.completion_tokens
             if not safety_outcome.passed:
                 yield GenerationEvent(
-                    step="safety_check", status="rejected", detail="; ".join(safety_outcome.reasons), attempt=attempt
+                    step="safety_check",
+                    status="rejected",
+                    detail="; ".join(safety_outcome.reasons),
+                    attempt=attempt,
                 )
                 continue
             yield GenerationEvent(step="safety_check", status="passed", attempt=attempt)
@@ -158,7 +164,9 @@ class GenerateCase:
                 return
 
             await asyncio.to_thread(self._case_repository.save, detective_case)
-            self._log_usage(prompt_tokens, completion_tokens, outcome="saved", case_id=detective_case.case_id.value)
+            self._log_usage(
+                prompt_tokens, completion_tokens, outcome="saved", case_id=detective_case.case_id.value
+            )
             yield GenerationEvent(
                 step="saving", status="done", attempt=attempt, case=detective_case.public_view()
             )
@@ -187,7 +195,7 @@ class GenerateCase:
         )
         clues = tuple(Clue(clue_id=c.clue_id, text=c.text) for c in candidate.clues)
         solution = Solution(culprit_suspect_id=culprit.suspect_id, explanation=candidate.solution_explanation)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         return DetectiveCase(
             case_id=CaseId(f"case_live_{uuid.uuid4().hex[:12]}"),
             title=candidate.title,

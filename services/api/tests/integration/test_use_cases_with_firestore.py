@@ -13,7 +13,6 @@ from app.infrastructure.firestore.firestore_hint_request_repository import (
     FirestoreHintRequestRepository,
 )
 from app.infrastructure.firestore.firestore_player_repository import FirestorePlayerRepository
-
 from tests.fakes import FakeHintAssistant
 
 from .conftest import requires_firestore_emulator
@@ -31,9 +30,7 @@ def test_submit_solution_persists_an_attempt_and_updates_the_player(firestore_cl
     hint_request_repository = FirestoreHintRequestRepository(client=firestore_client)
     attempt_repository = FirestoreAttemptRepository(client=firestore_client)
 
-    use_case = SubmitSolution(
-        case_repository, player_repository, hint_request_repository, attempt_repository
-    )
+    use_case = SubmitSolution(case_repository, player_repository, hint_request_repository, attempt_repository)
     result = use_case.execute(case.case_id, "player-1", "suspect_3")
 
     assert result.correct is True

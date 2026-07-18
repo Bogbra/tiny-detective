@@ -72,8 +72,6 @@ def test_build_case_candidate_maps_clue_text_by_id_not_position():
     rendered["clues"] = list(reversed(rendered["clues"]))
     candidate = build_case_candidate_from_rendered(case_logic, rendered)
 
-    identifying_index = next(
-        i for i, c in enumerate(case_logic.clues) if c.kind == "identifying"
-    )
+    identifying_index = next(i for i, c in enumerate(case_logic.clues) if c.kind == "identifying")
     culprit = next(s for s in case_logic.suspects if s.is_culprit)
     assert culprit.signature_item in candidate.clues[identifying_index].text

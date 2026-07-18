@@ -50,9 +50,7 @@ def test_multiple_culprits_is_a_violation(make_case):
 
 def test_solution_culprit_must_match_marked_suspect(make_case):
     case = make_case()
-    case = dataclasses.replace(
-        case, solution=Solution(culprit_suspect_id="suspect_1", explanation="wrong")
-    )
+    case = dataclasses.replace(case, solution=Solution(culprit_suspect_id="suspect_1", explanation="wrong"))
 
     violations = CaseConsistencyPolicy().check(case)
 

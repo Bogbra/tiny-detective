@@ -15,8 +15,6 @@ class RejectCase:
         if case is None:
             raise CaseNotFoundError(f"case '{case_id.value}' not found")
         if case.status != PublishStatus.DRAFT:
-            raise CaseNotInDraftError(
-                f"case '{case_id.value}' is '{case.status.value}', not draft"
-            )
+            raise CaseNotInDraftError(f"case '{case_id.value}' is '{case.status.value}', not draft")
 
         self._case_repository.save(dataclasses.replace(case, status=PublishStatus.REJECTED))

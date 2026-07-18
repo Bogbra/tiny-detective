@@ -28,7 +28,9 @@ class CaseApiClient {
   Future<PlayerDto> createPlayer() async {
     final response = await _httpClient.post(Uri.parse('$_baseUrl/players'));
     _throwIfNotOk(response);
-    return PlayerDto.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    return PlayerDto.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
   }
 
   Future<CaseResultDto> submitSolution({
@@ -42,10 +44,15 @@ class CaseApiClient {
       body: jsonEncode({'playerId': playerId, 'suspectId': suspectId}),
     );
     _throwIfNotOk(response);
-    return CaseResultDto.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+    return CaseResultDto.fromJson(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
   }
 
-  Future<HintDto> requestHint({required String caseId, required String playerId}) async {
+  Future<HintDto> requestHint({
+    required String caseId,
+    required String playerId,
+  }) async {
     final response = await _httpClient.post(
       Uri.parse('$_baseUrl/cases/$caseId/hint'),
       headers: _jsonHeaders,

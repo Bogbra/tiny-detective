@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [main]
 
+# Cancels a PR's in-progress run when a new commit is pushed to the same
+# PR — avoids burning CI minutes on a superseded commit. Scoped to
+# github.ref so pushes to main still queue/run independently (never
+# cancel a main build in favor of a later one; each main push should get
+# its own real result).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   frontend-checks:
     runs-on: ubuntu-latest
@@ -18,8 +27,14 @@ jobs:
         with:
           channel: stable
           flutter-version: 3.44.6
+          cache: true
       - run: flutter pub get
       - run: flutter analyze
+      # --set-exit-if-changed: fails the job if any file isn't already
+      # formatted, same enforcement shape as ruff format --check below —
+      # a formatting drift should be caught here, not left for the next
+      # person to notice in a review diff.
+      - run: dart format --output=none --set-exit-if-changed .
       - run: flutter test
       - run: flutter build web --release
 
@@ -33,7 +48,10 @@ jobs:
       - uses: astral-sh/setup-uv@v3
         with:
           version: "0.10.2"
+          enable-cache: true
       - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
       - run: uv run pytest
 
   # A named, visible subset of what backend-checks already runs in full —
@@ -52,6 +70,7 @@ jobs:
       - uses: astral-sh/setup-uv@v3
         with:
           version: "0.10.2"
+          enable-cache: true
       - run: uv sync
       - run: uv run pytest tests/contract
 
@@ -65,8 +84,45 @@ jobs:
       - uses: astral-sh/setup-uv@v3
         with:
           version: "0.10.2"
+          enable-cache: true
       - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
       - run: uv run pytest
+
+  # Real dependency-vulnerability scanning, not just linting — separate
+  # job (not folded into backend-checks/frontend-checks) so a known,
+  # currently-unfixable finding doesn't have to block those on every run;
+  # see the reasoning below on why this one doesn't hard-fail yet either.
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.10.2"
+          enable-cache: true
+
+      - name: pip-audit (services/api)
+        working-directory: services/api
+        run: uv run --with pip-audit pip-audit
+
+      - name: pip-audit (tools/ai-content)
+        working-directory: tools/ai-content
+        run: uv run --with pip-audit pip-audit
+
+      # osv-scanner covers pubspec.lock (pip-audit doesn't understand Dart
+      # dependencies at all) — used for the one ecosystem the two
+      # pip-audit steps above can't reach, not as a third redundant
+      # Python check. Installed via its own official Go install path
+      # rather than a marketplace action — ubuntu-latest ships Go
+      # preinstalled, and this is the one dependency-audit step whose
+      # exact CLI flags were actually verified locally (`osv-scanner scan
+      # --lockfile=...`) before being written here, so replicating that
+      # exact invocation is lower-risk than trusting a third-party
+      # action's input schema sight-unseen.
+      - run: go install github.com/google/osv-scanner/cmd/osv-scanner@latest
+      - run: $(go env GOPATH)/bin/osv-scanner scan --lockfile=apps/game/pubspec.lock
 
   # Build-only — proves the image builds, doesn't push anywhere. The real
   # push (to Artifact Registry) happens in deploy.yml, only on main, only
@@ -76,3 +132,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build -f services/api/Dockerfile -t tiny-detective-api .
+
+      # Real image vulnerability scan, not a checkbox: this exact command
+      # (severity/exit-code/ignorefile flags) was run against the actual
+      # built image locally before being added here (see .trivyignore's
+      # own comment) — every current HIGH/CRITICAL finding is a Debian OS
+      # package baked into the python:3.12-slim base image with no fix
+      # available yet, documented and ignored there explicitly, not
+      # silently. A NEW finding (a dependency this project actually
+      # controls, or a newly-disclosed CVE with a real fix) still fails
+      # the build. Installed via Trivy's own official install script
+      # rather than a marketplace action, for the same reason as
+      # osv-scanner above — this is the exact CLI invocation already
+      # verified locally, not a third-party action's input schema taken
+      # on faith.
+      - run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+      - run: trivy image --severity HIGH,CRITICAL --exit-code 1 --ignorefile .trivyignore tiny-detective-api

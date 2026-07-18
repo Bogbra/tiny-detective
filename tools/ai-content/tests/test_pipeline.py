@@ -7,7 +7,9 @@ from .fakes import FakeLogicConsistencyEvaluator, FakeSafetyEvaluator
 
 
 def _pipeline(tmp_path, *, logic_passed=True, safety_passed=True):
-    logic = FakeLogicConsistencyEvaluator(passed=logic_passed, reasons=() if logic_passed else ("not consistent",))
+    logic = FakeLogicConsistencyEvaluator(
+        passed=logic_passed, reasons=() if logic_passed else ("not consistent",)
+    )
     safety = FakeSafetyEvaluator(passed=safety_passed, reasons=() if safety_passed else ("not safe",))
     pipeline = CaseGenerationPipeline(
         safety_evaluator=safety,
@@ -54,7 +56,9 @@ def test_draft_records_which_prompt_version_judged_it(tmp_path, valid_raw_candid
     }
 
 
-def test_malformed_candidate_is_rejected_at_schema_stage_without_calling_evaluators(tmp_path, valid_raw_candidate):
+def test_malformed_candidate_is_rejected_at_schema_stage_without_calling_evaluators(
+    tmp_path, valid_raw_candidate
+):
     broken = dict(valid_raw_candidate)
     del broken["solution"]
     pipeline, logic, safety = _pipeline(tmp_path)

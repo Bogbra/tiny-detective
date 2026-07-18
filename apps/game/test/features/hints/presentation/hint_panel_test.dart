@@ -4,13 +4,19 @@ import 'package:game/features/hints/domain/hint_state.dart';
 import 'package:game/features/hints/presentation/hint_panel.dart';
 
 void main() {
-  testWidgets('shows a request button when no hint has been requested yet', (tester) async {
+  testWidgets('shows a request button when no hint has been requested yet', (
+    tester,
+  ) async {
     var requested = false;
 
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: HintPanel(hint: null, isLoading: false, onRequestHint: () => requested = true),
+          body: HintPanel(
+            hint: null,
+            isLoading: false,
+            onRequestHint: () => requested = true,
+          ),
         ),
       ),
     );
@@ -21,12 +27,18 @@ void main() {
     expect(requested, isTrue);
   });
 
-  testWidgets('shows hint text and remaining count once a hint exists', (tester) async {
+  testWidgets('shows hint text and remaining count once a hint exists', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: HintPanel(
-            hint: const HintState(text: 'Look closely.', hintsUsed: 1, hintsRemaining: 2),
+            hint: const HintState(
+              text: 'Look closely.',
+              hintsUsed: 1,
+              hintsRemaining: 2,
+            ),
             isLoading: false,
             onRequestHint: () {},
           ),
@@ -44,7 +56,11 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: HintPanel(
-            hint: const HintState(text: 'Last hint.', hintsUsed: 3, hintsRemaining: 0),
+            hint: const HintState(
+              text: 'Last hint.',
+              hintsUsed: 3,
+              hintsRemaining: 0,
+            ),
             isLoading: false,
             onRequestHint: () {},
           ),

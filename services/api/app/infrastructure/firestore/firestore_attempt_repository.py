@@ -16,9 +16,7 @@ class FirestoreAttemptRepository:
 
     def record(self, attempt: Attempt) -> None:
         doc_id = attempt.attempt_id or str(uuid.uuid4())
-        self._client.collection(CASE_ATTEMPTS_COLLECTION).document(doc_id).set(
-            attempt_to_document(attempt)
-        )
+        self._client.collection(CASE_ATTEMPTS_COLLECTION).document(doc_id).set(attempt_to_document(attempt))
 
     def exists_for(self, player_id: str, case_id: str) -> bool:
         # Two plain equality (==) filters on different fields — Firestore's

@@ -55,9 +55,7 @@ def test_set_daily_and_get_daily_round_trip(firestore_client, make_case):
 
 
 @requires_firestore_emulator
-def test_public_view_excludes_solution_and_private_fields_after_real_persistence(
-    firestore_client, make_case
-):
+def test_public_view_excludes_solution_and_private_fields_after_real_persistence(firestore_client, make_case):
     """Proves public/private separation holds end-to-end THROUGH real
     storage: the raw Firestore document must contain the solution/private
     data (the backend needs it server-side), but the domain object read

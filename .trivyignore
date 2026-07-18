@@ -1,0 +1,30 @@
+# Trivy vulnerability-scan ignore list — see task 15 of the security/ops
+# audit and .github/workflows/ci.yml's docker-build job.
+#
+# Every entry below was verified by actually running
+# `trivy image --severity HIGH,CRITICAL tiny-detective-api` against the
+# real built image (not assumed) — all 11 are Debian OS-level packages
+# baked into the python:3.12-slim base image (bsdutils, gzip, libacl1,
+# libblkid1, libncursesw6, libsmartcols1, libtinfo6, libuuid1,
+# ncurses-base, perl-base, util-linux), none are in this project's own
+# Python dependencies (fastapi, openai, google-cloud-firestore, etc. all
+# scanned clean). None had a fix available at the time this list was
+# written — a hard fail-on-any-HIGH/CRITICAL policy without this file
+# would make CI permanently red for reasons outside this project's
+# control until Debian/the upstream image publishes a fix, which isn't
+# a useful signal. Re-run the scan without this file periodically (or
+# whenever the Dockerfile's pinned base-image digest is deliberately
+# bumped — see the Dockerfile's own comment on that) and prune entries
+# that now have a real fix.
+
+CVE-2025-69720
+CVE-2026-13221
+CVE-2026-41992
+CVE-2026-42496
+CVE-2026-42497
+CVE-2026-48962
+CVE-2026-53615
+CVE-2026-54369
+CVE-2026-57432
+CVE-2026-8376
+CVE-2026-9538

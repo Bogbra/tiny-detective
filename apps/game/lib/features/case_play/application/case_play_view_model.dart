@@ -35,10 +35,13 @@ class CasePlayViewModel extends ChangeNotifier {
       detectiveCase = dailyCase;
       status = CasePlayStatus.playing;
     } on ApiException catch (e) {
-      errorMessage = e.message.isEmpty ? 'Something went wrong (${e.statusCode}).' : e.message;
+      errorMessage = e.message.isEmpty
+          ? 'Something went wrong (${e.statusCode}).'
+          : e.message;
       status = CasePlayStatus.error;
     } catch (_) {
-      errorMessage = 'Could not reach the server. Check your connection and try again.';
+      errorMessage =
+          'Could not reach the server. Check your connection and try again.';
       status = CasePlayStatus.error;
     }
 
@@ -75,7 +78,10 @@ class CasePlayViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      hint = await _repository.requestHint(caseId: currentCase.caseId, playerId: id);
+      hint = await _repository.requestHint(
+        caseId: currentCase.caseId,
+        playerId: id,
+      );
     } on ApiException {
       // Hint limit reached (409) or a transient error — leave existing hint
       // state as-is; the panel simply won't show a new hint this time.
@@ -89,7 +95,12 @@ class CasePlayViewModel extends ChangeNotifier {
     final currentCase = detectiveCase;
     final id = playerId;
     final suspectId = selectedSuspectId;
-    if (currentCase == null || id == null || suspectId == null || isSubmitting) return;
+    if (currentCase == null ||
+        id == null ||
+        suspectId == null ||
+        isSubmitting) {
+      return;
+    }
 
     isSubmitting = true;
     errorMessage = null;

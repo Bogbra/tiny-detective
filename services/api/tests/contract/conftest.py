@@ -57,16 +57,12 @@ def _isolated_repositories():
 
     app.dependency_overrides[dependencies.get_case_repository] = lambda: case_repository
     app.dependency_overrides[dependencies.get_player_repository] = lambda: player_repository
-    app.dependency_overrides[dependencies.get_hint_request_repository] = (
-        lambda: hint_request_repository
-    )
+    app.dependency_overrides[dependencies.get_hint_request_repository] = lambda: hint_request_repository
     app.dependency_overrides[dependencies.get_attempt_repository] = lambda: attempt_repository
     app.dependency_overrides[dependencies.get_hint_assistant] = lambda: hint_assistant
-    app.dependency_overrides[dependencies.get_case_generation_adapter] = (
-        lambda: case_generation_adapter
-    )
-    app.dependency_overrides[dependencies.get_generation_quota_repository] = (
-        lambda: generation_quota_repository
+    app.dependency_overrides[dependencies.get_case_generation_adapter] = lambda: case_generation_adapter
+    app.dependency_overrides[dependencies.get_generation_quota_repository] = lambda: (
+        generation_quota_repository
     )
 
     yield

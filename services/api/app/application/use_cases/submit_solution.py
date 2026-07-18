@@ -1,7 +1,7 @@
 import dataclasses
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.application.errors import CaseNotFoundError, PlayerNotFoundError
 from app.application.ports import (
@@ -47,9 +47,7 @@ class SubmitSolution:
         self._solution_policy = solution_policy or SolutionPolicy()
         self._scoring_policy = scoring_policy or ScoringPolicy()
 
-    def execute(
-        self, case_id: CaseId, player_id: str, submitted_suspect_id: str
-    ) -> SubmitSolutionResult:
+    def execute(self, case_id: CaseId, player_id: str, submitted_suspect_id: str) -> SubmitSolutionResult:
         case = self._case_repository.get(case_id)
         if case is None:
             raise CaseNotFoundError(f"case '{case_id.value}' not found")
@@ -83,7 +81,7 @@ class SubmitSolution:
                 player,
                 streak=new_streak,
                 total_score=player.total_score + score,
-                last_played_at=datetime.now(timezone.utc),
+                last_played_at=datetime.now(UTC),
             )
             self._player_repository.save(updated_player)
 
@@ -96,7 +94,7 @@ class SubmitSolution:
                 correct=result.correct,
                 score=score,
                 hints_used=hints_used,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
         )
 

@@ -36,8 +36,7 @@ def _well_rendered(case_logic):
         "suspects": suspects,
         "clues": clues,
         "solutionExplanation": (
-            f"The {culprit.signature_item} found at {case_logic.template.incident_location} "
-            "gives it away."
+            f"The {culprit.signature_item} found at {case_logic.template.incident_location} gives it away."
         ),
     }
 
@@ -85,9 +84,9 @@ def test_paraphrased_required_phrase_in_clue_fails():
     rendered = _well_rendered(case_logic)
     # Replace the identifying clue's text with something that paraphrases
     # away the required phrases instead of stating them verbatim.
-    rendered["clues"] = [
-        {"clueId": "clue_identifying", "text": "Something suspicious was found nearby."}
-    ] + [c for c in rendered["clues"] if c["clueId"] != "clue_identifying"]
+    rendered["clues"] = [{"clueId": "clue_identifying", "text": "Something suspicious was found nearby."}] + [
+        c for c in rendered["clues"] if c["clueId"] != "clue_identifying"
+    ]
     result = check_fidelity(case_logic, rendered)
     assert result.passed is False
     assert any("clue_identifying" in r for r in result.reasons)

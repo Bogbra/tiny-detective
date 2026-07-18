@@ -6,9 +6,7 @@ class InMemoryCaseRepository:
     """Process-local case store. Replaced by a Firestore-backed repository in Phase 7."""
 
     def __init__(self, initial_cases: list[DetectiveCase] | None = None) -> None:
-        self._cases: dict[str, DetectiveCase] = {
-            case.case_id.value: case for case in (initial_cases or [])
-        }
+        self._cases: dict[str, DetectiveCase] = {case.case_id.value: case for case in (initial_cases or [])}
         self._daily_case_id: str | None = None
 
     def get(self, case_id: CaseId) -> DetectiveCase | None:

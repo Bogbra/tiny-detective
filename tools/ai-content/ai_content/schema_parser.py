@@ -53,8 +53,7 @@ def parse_case_candidate(raw: object) -> CaseCandidate:
     culprit_names: set[str] = set()
     for i, s in enumerate(suspects_raw, start=1):
         if not isinstance(s, dict) or not all(
-            isinstance(s.get(k), str) and s.get(k, "").strip()
-            for k in ("name", "role", "publicStatement")
+            isinstance(s.get(k), str) and s.get(k, "").strip() for k in ("name", "role", "publicStatement")
         ):
             reasons.append(f"suspect #{i} is missing a required string field")
             continue

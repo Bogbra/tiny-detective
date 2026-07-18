@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.domain.entities.attempt import Attempt
 from app.infrastructure.firestore.firestore_attempt_repository import FirestoreAttemptRepository
@@ -19,7 +19,7 @@ def test_record_persists_full_attempt(firestore_client):
             correct=True,
             score=100,
             hints_used=0,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
     )
 
@@ -50,7 +50,7 @@ def test_exists_for_is_true_after_recording_real_against_the_emulator(firestore_
             correct=True,
             score=100,
             hints_used=0,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
     )
 

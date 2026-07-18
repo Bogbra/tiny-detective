@@ -58,9 +58,7 @@ class AssistantHint:
 
 
 class HintAssistant(Protocol):
-    def generate_hint(
-        self, public_case: PublicDetectiveCase, hint_level: int
-    ) -> AssistantHint | None:
+    def generate_hint(self, public_case: PublicDetectiveCase, hint_level: int) -> AssistantHint | None:
         """Returns None on any failure (no key, network error, malformed
         response) — the caller falls back to a deterministic hint rather
         than erroring the request. public_case never contains the solution

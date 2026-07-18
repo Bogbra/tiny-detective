@@ -29,7 +29,7 @@ import json
 import sys
 import tempfile
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from ai_content.draft_store import DraftStore
@@ -126,9 +126,7 @@ def main() -> int:
             for _ in range(args.repeats):
                 logic_evaluator = OpenAILogicConsistencyEvaluator(model=args.model)
                 safety_evaluator = OpenAISafetyEvaluator(model=args.model)
-                result, tokens = _run_once(
-                    logic_evaluator, safety_evaluator, fixture["candidate"], tmp_root
-                )
+                result, tokens = _run_once(logic_evaluator, safety_evaluator, fixture["candidate"], tmp_root)
                 verdicts.append(result.accepted)
                 stages.append(result.stage_failed)
                 total_tokens["prompt_tokens"] += tokens["prompt_tokens"]
@@ -170,8 +168,7 @@ def main() -> int:
             stability_note = "" if stable else "  ** UNSTABLE across repeats **"
             tier_note = f" [{fixture['tier']}]" if fixture["tier"] else ""
             print(
-                f"[{flag}] {fixture['name']}{tier_note}: verdicts={verdicts} "
-                f"stages={stages}{stability_note}"
+                f"[{flag}] {fixture['name']}{tier_note}: verdicts={verdicts} stages={stages}{stability_note}"
             )
 
     precision = tp / (tp + fp) if (tp + fp) else float("nan")
@@ -222,7 +219,7 @@ def main() -> int:
         )
 
     baseline = {
-        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "generatedAt": datetime.now(UTC).isoformat(),
         "model": args.model,
         "temperature": DEFAULT_TEMPERATURE,
         "repeatsPerFixture": args.repeats,

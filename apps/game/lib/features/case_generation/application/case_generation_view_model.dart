@@ -55,7 +55,8 @@ class CaseGenerationViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (_) {
       state = CaseGenerationState.networkError;
-      errorMessage = 'Could not reach the server. Check your connection and try again.';
+      errorMessage =
+          'Could not reach the server. Check your connection and try again.';
       notifyListeners();
     }
   }
@@ -80,7 +81,8 @@ class CaseGenerationViewModel extends ChangeNotifier {
         // players. A fixed, friendly message instead — same "no raw
         // backend internals in player-facing text" rule as
         // ApiException.fromResponseBody.
-        lastRejectionDetail = "That attempt didn't pass our quality check — trying again…";
+        lastRejectionDetail =
+            "That attempt didn't pass our quality check — trying again…";
       }
     }
 
@@ -105,6 +107,7 @@ class CaseGenerationViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  String _friendlyMessage(ApiException e) =>
-      e.message.isEmpty ? 'Could not generate a case (${e.statusCode}).' : e.message;
+  String _friendlyMessage(ApiException e) => e.message.isEmpty
+      ? 'Could not generate a case (${e.statusCode}).'
+      : e.message;
 }

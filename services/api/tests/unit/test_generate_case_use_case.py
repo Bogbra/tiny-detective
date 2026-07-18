@@ -50,9 +50,7 @@ async def test_visible_restart_after_a_rejection():
     """A logic-judge rejection on attempt 1, success on attempt 2 — the
     stream must show the real restart (a fresh 'generating: running' for
     attempt 2), not just the final outcome."""
-    adapter = FakeCaseGenerationAdapter(
-        [AttemptScript(logic_passes=False), AttemptScript(logic_passes=True)]
-    )
+    adapter = FakeCaseGenerationAdapter([AttemptScript(logic_passes=False), AttemptScript(logic_passes=True)])
     quota = InMemoryDailyGenerationQuotaRepository(success_cap=50, attempt_cap=300)
     use_case = GenerateCase(adapter, InMemoryCaseRepository(initial_cases=[]), quota)
 

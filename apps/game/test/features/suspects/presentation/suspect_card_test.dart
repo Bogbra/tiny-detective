@@ -13,7 +13,9 @@ void main() {
 
   testWidgets('renders suspect name, role and statement', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(home: SuspectCard(suspect: suspect, isSelected: false, onTap: () {})),
+      MaterialApp(
+        home: SuspectCard(suspect: suspect, isSelected: false, onTap: () {}),
+      ),
     );
 
     expect(find.text('Mara'), findsOneWidget);
@@ -22,12 +24,18 @@ void main() {
     expect(find.byIcon(Icons.check_circle), findsNothing);
   });
 
-  testWidgets('shows a check icon when selected and calls onTap when tapped', (tester) async {
+  testWidgets('shows a check icon when selected and calls onTap when tapped', (
+    tester,
+  ) async {
     var tapped = false;
 
     await tester.pumpWidget(
       MaterialApp(
-        home: SuspectCard(suspect: suspect, isSelected: true, onTap: () => tapped = true),
+        home: SuspectCard(
+          suspect: suspect,
+          isSelected: true,
+          onTap: () => tapped = true,
+        ),
       ),
     );
 

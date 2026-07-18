@@ -44,7 +44,9 @@ class GenerateCaseButton extends StatelessWidget {
       case CaseGenerationState.pipelineFailed:
         return _Message(
           icon: Icons.refresh,
-          text: viewModel.errorMessage ?? 'Could not generate a valid case this time.',
+          text:
+              viewModel.errorMessage ??
+              'Could not generate a valid case this time.',
           onDismiss: viewModel.reset,
           onRetry: viewModel.start,
         );
@@ -61,7 +63,12 @@ class GenerateCaseButton extends StatelessWidget {
 }
 
 class _Message extends StatelessWidget {
-  const _Message({required this.icon, required this.text, required this.onDismiss, this.onRetry});
+  const _Message({
+    required this.icon,
+    required this.text,
+    required this.onDismiss,
+    this.onRetry,
+  });
 
   final IconData icon;
   final String text;

@@ -161,6 +161,4 @@ def require_admin(x_admin_token: str = Header(default="")) -> None:
     """
     expected = os.environ.get(ADMIN_TOKEN_ENV_VAR)
     if not expected or not secrets.compare_digest(x_admin_token, expected):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="admin authentication required"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="admin authentication required")

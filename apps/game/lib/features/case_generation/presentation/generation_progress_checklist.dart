@@ -25,7 +25,9 @@ class GenerationProgressChecklist extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          viewModel.attempt == 1 ? 'Generating…' : 'Attempt ${viewModel.attempt}',
+          viewModel.attempt == 1
+              ? 'Generating…'
+              : 'Attempt ${viewModel.attempt}',
           style: Theme.of(context).textTheme.titleSmall,
         ),
         const SizedBox(height: 8),
@@ -35,9 +37,9 @@ class GenerationProgressChecklist extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             viewModel.lastRejectionDetail!,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.error,
+            ),
           ),
         ],
       ],
@@ -70,7 +72,11 @@ class _StepRow extends StatelessWidget {
       case 'running':
         return const CircularProgressIndicator(strokeWidth: 2);
       case 'passed':
-        return const Icon(Icons.check_circle, color: AppColors.success, size: 20);
+        return const Icon(
+          Icons.check_circle,
+          color: AppColors.success,
+          size: 20,
+        );
       case 'rejected':
         return const Icon(Icons.cancel, color: AppColors.failure, size: 20);
       default:

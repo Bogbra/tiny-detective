@@ -10,7 +10,6 @@ from app.infrastructure.repositories.in_memory_hint_request_repository import (
     InMemoryHintRequestRepository,
 )
 from app.infrastructure.repositories.in_memory_player_repository import InMemoryPlayerRepository
-
 from tests.fakes import FakeHintAssistant
 
 

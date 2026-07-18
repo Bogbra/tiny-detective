@@ -63,9 +63,7 @@ def test_per_ip_rate_limit_returns_429_before_quota_is_consulted(client):
 
 
 def test_rejection_then_success_shows_a_visible_restart(client):
-    adapter = FakeCaseGenerationAdapter(
-        [AttemptScript(logic_passes=False), AttemptScript(logic_passes=True)]
-    )
+    adapter = FakeCaseGenerationAdapter([AttemptScript(logic_passes=False), AttemptScript(logic_passes=True)])
     app.dependency_overrides[dependencies.get_case_generation_adapter] = lambda: adapter
 
     response = client.post("/cases/generate")

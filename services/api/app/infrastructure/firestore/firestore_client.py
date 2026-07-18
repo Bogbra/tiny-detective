@@ -46,9 +46,7 @@ def is_firestore_configured() -> bool:
     """
     if "pytest" in sys.modules:
         return False
-    return bool(
-        os.environ.get("FIRESTORE_EMULATOR_HOST") or os.environ.get("GOOGLE_CLOUD_PROJECT")
-    )
+    return bool(os.environ.get("FIRESTORE_EMULATOR_HOST") or os.environ.get("GOOGLE_CLOUD_PROJECT"))
 
 
 def get_firestore_client() -> firestore.Client:

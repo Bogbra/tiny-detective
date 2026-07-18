@@ -23,7 +23,9 @@ class CaseGenerationRepositoryImpl implements CaseGenerationRepository {
       status: dto.status,
       detail: dto.detail,
       attempt: dto.attempt,
-      generatedCase: dto.caseDto != null ? _toDetectiveCase(dto.caseDto!) : null,
+      generatedCase: dto.caseDto != null
+          ? _toDetectiveCase(dto.caseDto!)
+          : null,
     );
   }
 
@@ -43,7 +45,9 @@ class CaseGenerationRepositoryImpl implements CaseGenerationRepository {
             ),
           )
           .toList(),
-      clues: dto.clues.map((c) => Clue(clueId: c.clueId, text: c.text)).toList(),
+      clues: dto.clues
+          .map((c) => Clue(clueId: c.clueId, text: c.text))
+          .toList(),
       difficulty: dto.difficulty,
     );
   }

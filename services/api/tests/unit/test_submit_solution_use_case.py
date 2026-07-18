@@ -1,3 +1,5 @@
+import pytest
+
 from app.application.errors import CaseNotFoundError, PlayerNotFoundError
 from app.application.use_cases.submit_solution import SubmitSolution
 from app.domain.entities.player import Player
@@ -9,8 +11,6 @@ from app.infrastructure.repositories.in_memory_hint_request_repository import (
     InMemoryHintRequestRepository,
 )
 from app.infrastructure.repositories.in_memory_player_repository import InMemoryPlayerRepository
-
-import pytest
 
 
 def _use_case(case, *, known_player_id="player-1"):
@@ -109,9 +109,7 @@ def test_repeat_submissions_are_still_recorded_as_attempts(make_case):
             super().record(attempt)
 
     attempt_repository = _CountingAttemptRepository()
-    use_case = SubmitSolution(
-        case_repository, player_repository, hint_request_repository, attempt_repository
-    )
+    use_case = SubmitSolution(case_repository, player_repository, hint_request_repository, attempt_repository)
 
     use_case.execute(case.case_id, "player-1", "suspect_3")
     use_case.execute(case.case_id, "player-1", "suspect_3")
@@ -127,9 +125,7 @@ def test_a_different_player_on_the_same_case_scores_independently(make_case):
     player_repository.save(Player(player_id="player-2"))
     hint_request_repository = InMemoryHintRequestRepository()
     attempt_repository = InMemoryAttemptRepository()
-    use_case = SubmitSolution(
-        case_repository, player_repository, hint_request_repository, attempt_repository
-    )
+    use_case = SubmitSolution(case_repository, player_repository, hint_request_repository, attempt_repository)
 
     use_case.execute(case.case_id, "player-1", "suspect_3")
     result = use_case.execute(case.case_id, "player-2", "suspect_3")

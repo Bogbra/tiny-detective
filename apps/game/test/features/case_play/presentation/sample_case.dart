@@ -37,7 +37,10 @@ DetectiveCase sampleCase() {
         text: 'A visitor wristband was found near the display case.',
       ),
       Clue(clueId: 'clue_2', text: 'There were no signs of forced entry.'),
-      Clue(clueId: 'clue_3', text: 'The archive motion sensor stayed inactive.'),
+      Clue(
+        clueId: 'clue_3',
+        text: 'The archive motion sensor stayed inactive.',
+      ),
     ],
     difficulty: 'easy',
   );

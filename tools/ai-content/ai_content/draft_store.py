@@ -7,7 +7,7 @@ generated ever becomes directly approved/live.
 import json
 import uuid
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .models import CaseCandidate
@@ -57,7 +57,7 @@ class DraftStore:
                 "logic": logic_prompt_version,
                 "safety": safety_prompt_version,
             },
-            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "createdAt": datetime.now(UTC).isoformat(),
         }
         path = self._directory / f"{generation_id}.json"
         path.write_text(json.dumps(record, indent=2))

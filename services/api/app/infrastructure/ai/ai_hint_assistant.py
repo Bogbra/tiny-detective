@@ -24,9 +24,7 @@ class OpenAIHintAssistant:
         self.temperature = temperature
         self.prompt_version = Path(self.PROMPT_FILE).stem
 
-    def generate_hint(
-        self, public_case: PublicDetectiveCase, hint_level: int
-    ) -> AssistantHint | None:
+    def generate_hint(self, public_case: PublicDetectiveCase, hint_level: int) -> AssistantHint | None:
         try:
             client = get_openai_client()
         except MissingApiKeyError:

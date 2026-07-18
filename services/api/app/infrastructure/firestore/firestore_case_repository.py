@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from google.cloud import firestore
 
@@ -27,25 +27,23 @@ class FirestoreCaseRepository:
         return document_to_case(case_id.value, doc.to_dict())
 
     def get_daily(self) -> DetectiveCase | None:
-        today = datetime.now(timezone.utc).date().isoformat()
+        today = datetime.now(UTC).date().isoformat()
         daily_doc = self._client.collection(DAILY_CASES_COLLECTION).document(today).get()
         if not daily_doc.exists:
             return None
         return self.get(CaseId(daily_doc.to_dict()["caseId"]))
 
     def set_daily(self, case_id: CaseId) -> None:
-        today = datetime.now(timezone.utc).date().isoformat()
+        today = datetime.now(UTC).date().isoformat()
         self._client.collection(DAILY_CASES_COLLECTION).document(today).set(
             {
                 "caseId": case_id.value,
-                "publishedAt": datetime.now(timezone.utc),
+                "publishedAt": datetime.now(UTC),
             }
         )
 
     def save(self, case: DetectiveCase) -> None:
-        self._client.collection(CASES_COLLECTION).document(case.case_id.value).set(
-            case_to_document(case)
-        )
+        self._client.collection(CASES_COLLECTION).document(case.case_id.value).set(case_to_document(case))
 
     def list_all(self) -> list[DetectiveCase]:
         return [

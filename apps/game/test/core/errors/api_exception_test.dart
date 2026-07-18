@@ -13,13 +13,19 @@ void main() {
   });
 
   test('falls back to the raw body when it is not JSON', () {
-    final exception = ApiException.fromResponseBody(500, 'Internal Server Error');
+    final exception = ApiException.fromResponseBody(
+      500,
+      'Internal Server Error',
+    );
 
     expect(exception.message, 'Internal Server Error');
   });
 
   test('falls back to the raw body when JSON has no detail field', () {
-    final exception = ApiException.fromResponseBody(400, '{"error":"something else"}');
+    final exception = ApiException.fromResponseBody(
+      400,
+      '{"error":"something else"}',
+    );
 
     expect(exception.message, '{"error":"something else"}');
   });

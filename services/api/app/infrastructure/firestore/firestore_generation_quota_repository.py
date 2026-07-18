@@ -18,7 +18,7 @@ emulator, real-concurrency behavior unverified," the same honest framing
 docs/scalability.md already uses for composite indexes.
 """
 
-from datetime import date, datetime, time, timezone
+from datetime import UTC, date, datetime, time
 
 from google.cloud import firestore
 
@@ -40,7 +40,7 @@ def _expire_at_for(today: date) -> datetime:
     DailyGenerationQuotaRepository's docstring). A few days' grace past
     the day this counter document was actually for, not deleted the
     instant it stops being read."""
-    return datetime.combine(today, time.min, tzinfo=timezone.utc) + RATE_LIMIT_RETENTION
+    return datetime.combine(today, time.min, tzinfo=UTC) + RATE_LIMIT_RETENTION
 
 
 class FirestoreDailyGenerationQuotaRepository:
@@ -80,9 +80,7 @@ class FirestoreDailyGenerationQuotaRepository:
             current = data.get(field, 0)
             if current >= cap:
                 return False
-            transaction.set(
-                doc_ref, {field: current + 1, "expireAt": _expire_at_for(today)}, merge=True
-            )
+            transaction.set(doc_ref, {field: current + 1, "expireAt": _expire_at_for(today)}, merge=True)
             return True
 
         try:

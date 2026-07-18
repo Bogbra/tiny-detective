@@ -11,7 +11,11 @@ import '../application/case_play_view_model.dart';
 import 'solution_submit_button.dart';
 
 class CasePlayScreen extends StatefulWidget {
-  const CasePlayScreen({super.key, required this.viewModel, required this.caseGenerationRepository});
+  const CasePlayScreen({
+    super.key,
+    required this.viewModel,
+    required this.caseGenerationRepository,
+  });
 
   final CasePlayViewModel viewModel;
   final CaseGenerationRepository caseGenerationRepository;
@@ -27,7 +31,9 @@ class _CasePlayScreenState extends State<CasePlayScreen> {
   void initState() {
     super.initState();
     widget.viewModel.start();
-    _generationViewModel = CaseGenerationViewModel(widget.caseGenerationRepository);
+    _generationViewModel = CaseGenerationViewModel(
+      widget.caseGenerationRepository,
+    );
     _generationViewModel.addListener(_onGenerationChanged);
   }
 
@@ -44,7 +50,8 @@ class _CasePlayScreenState extends State<CasePlayScreen> {
   /// trigger as a side effect of being called.
   void _onGenerationChanged() {
     final generated = _generationViewModel.generatedCase;
-    if (_generationViewModel.state == CaseGenerationState.success && generated != null) {
+    if (_generationViewModel.state == CaseGenerationState.success &&
+        generated != null) {
       widget.viewModel.loadGeneratedCase(generated);
       _generationViewModel.reset();
     }
@@ -56,7 +63,10 @@ class _CasePlayScreenState extends State<CasePlayScreen> {
       appBar: AppBar(title: const Text('Tiny Detective')),
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: Listenable.merge([widget.viewModel, _generationViewModel]),
+          listenable: Listenable.merge([
+            widget.viewModel,
+            _generationViewModel,
+          ]),
           builder: (context, _) => _buildBody(context, widget.viewModel),
         ),
       ),
@@ -103,7 +113,10 @@ class _PlayingView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(detectiveCase.title, style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            detectiveCase.title,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 4),
           Text(detectiveCase.setting),
           const SizedBox(height: 8),

@@ -108,9 +108,7 @@ def test_solve_detects_two_suspects_at_the_incident_location():
     )
     # Also drop their alibi clue — otherwise they'd still be excluded by it,
     # masking the corruption this test means to exercise.
-    broken_clues = tuple(
-        c for c in case_logic.clues if c.clue_id != f"clue_alibi_{innocent.token}"
-    )
+    broken_clues = tuple(c for c in case_logic.clues if c.clue_id != f"clue_alibi_{innocent.token}")
     broken = replace(case_logic, suspects=broken_suspects, clues=broken_clues)
     with pytest.raises(LogicBuildError):
         solve(broken)

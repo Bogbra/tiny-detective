@@ -9,7 +9,9 @@ void main() {
   bootstrap(
     () => TinyDetectiveApp(
       caseRepository: CaseRepositoryImpl(CaseApiClient()),
-      caseGenerationRepository: CaseGenerationRepositoryImpl(CaseGenerationApiClient()),
+      caseGenerationRepository: CaseGenerationRepositoryImpl(
+        CaseGenerationApiClient(),
+      ),
     ),
   );
 }

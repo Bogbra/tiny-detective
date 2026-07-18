@@ -13,5 +13,8 @@ abstract class CaseRepository {
     required String suspectId,
   });
 
-  Future<HintState> requestHint({required String caseId, required String playerId});
+  Future<HintState> requestHint({
+    required String caseId,
+    required String playerId,
+  });
 }

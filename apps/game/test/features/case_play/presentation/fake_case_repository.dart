@@ -49,7 +49,10 @@ class FakeCaseRepository implements CaseRepository {
   }
 
   @override
-  Future<HintState> requestHint({required String caseId, required String playerId}) async {
+  Future<HintState> requestHint({
+    required String caseId,
+    required String playerId,
+  }) async {
     hintCalls += 1;
     final failure = throwOnHint;
     if (failure != null) throw failure;

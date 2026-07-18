@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.domain.entities.hint_request import HintRequest
 from app.domain.value_objects.case_id import CaseId
@@ -18,7 +18,7 @@ def _hint_request(**overrides) -> HintRequest:
         text="Look closer.",
         grounded_in_clue_ids=("clue_1",),
         passed_guardrails=True,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     defaults.update(overrides)
     return HintRequest(**defaults)

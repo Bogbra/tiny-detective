@@ -35,7 +35,9 @@ class CaseRepositoryImpl implements CaseRepository {
             ),
           )
           .toList(),
-      clues: dto.clues.map((c) => Clue(clueId: c.clueId, text: c.text)).toList(),
+      clues: dto.clues
+          .map((c) => Clue(clueId: c.clueId, text: c.text))
+          .toList(),
       difficulty: dto.difficulty,
     );
   }
@@ -62,8 +64,14 @@ class CaseRepositoryImpl implements CaseRepository {
   }
 
   @override
-  Future<HintState> requestHint({required String caseId, required String playerId}) async {
-    final dto = await _apiClient.requestHint(caseId: caseId, playerId: playerId);
+  Future<HintState> requestHint({
+    required String caseId,
+    required String playerId,
+  }) async {
+    final dto = await _apiClient.requestHint(
+      caseId: caseId,
+      playerId: playerId,
+    );
     return HintState(
       text: dto.text,
       hintsUsed: dto.hintsUsed,

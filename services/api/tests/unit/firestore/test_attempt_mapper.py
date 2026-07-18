@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from app.domain.entities.attempt import Attempt
 from app.infrastructure.firestore.attempt_mapper import attempt_to_document, document_to_attempt
@@ -13,7 +13,7 @@ def test_round_trip_preserves_all_fields():
         correct=True,
         score=85,
         hints_used=1,
-        created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        created_at=datetime(2026, 1, 1, tzinfo=UTC),
     )
 
     document = attempt_to_document(attempt)
@@ -48,7 +48,7 @@ def test_document_uses_camel_case_field_names():
 
 
 def test_expire_at_is_180_days_after_created_at():
-    created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    created_at = datetime(2026, 1, 1, tzinfo=UTC)
     attempt = Attempt(
         attempt_id="a",
         player_id="p",

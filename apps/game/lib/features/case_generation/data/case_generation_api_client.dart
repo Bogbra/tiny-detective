@@ -25,7 +25,8 @@ class CaseGenerationApiClient {
     final request = http.Request('POST', Uri.parse('$_baseUrl/cases/generate'));
     final streamedResponse = await _httpClient.send(request);
 
-    if (streamedResponse.statusCode < 200 || streamedResponse.statusCode >= 300) {
+    if (streamedResponse.statusCode < 200 ||
+        streamedResponse.statusCode >= 300) {
       final body = await streamedResponse.stream.bytesToString();
       throw ApiException.fromResponseBody(streamedResponse.statusCode, body);
     }
@@ -36,7 +37,8 @@ class CaseGenerationApiClient {
 
     await for (final line in lines) {
       if (!line.startsWith('data: ')) continue;
-      final json = jsonDecode(line.substring('data: '.length)) as Map<String, dynamic>;
+      final json =
+          jsonDecode(line.substring('data: '.length)) as Map<String, dynamic>;
       yield GenerationEventDto.fromJson(json);
     }
   }
