@@ -4,6 +4,8 @@
 
 from app.domain.entities.attempt import Attempt
 
+from .ttl import ATTEMPT_AND_HINT_RETENTION, expire_at
+
 
 def attempt_to_document(attempt: Attempt) -> dict:
     return {
@@ -14,6 +16,9 @@ def attempt_to_document(attempt: Attempt) -> dict:
         "score": attempt.score,
         "hintsUsed": attempt.hints_used,
         "createdAt": attempt.created_at,
+        # See ttl.py + docs/operations.md — inert without the matching
+        # `gcloud firestore fields ttls update` policy also being applied.
+        "expireAt": expire_at(attempt.created_at, ATTEMPT_AND_HINT_RETENTION),
     }
 
 

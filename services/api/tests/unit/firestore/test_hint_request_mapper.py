@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from app.domain.entities.hint_request import HintRequest
 from app.infrastructure.firestore.hint_request_mapper import (
@@ -40,4 +40,16 @@ def test_document_uses_camel_case_field_names():
         "groundedInClueIds",
         "passedGuardrails",
         "createdAt",
+        "expireAt",
     }
+
+
+def test_expire_at_is_180_days_after_created_at():
+    created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    hint_request = HintRequest(
+        hint_request_id="hint-1", case_id="c", player_id="p", level=1, text="t", created_at=created_at
+    )
+
+    document = hint_request_to_document(hint_request)
+
+    assert document["expireAt"] == created_at + timedelta(days=180)

@@ -10,16 +10,31 @@ that it holds at production scale.
 """
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import date, datetime, time, timedelta, timezone
 
 from app.infrastructure.firestore.firestore_generation_quota_repository import (
+    RATE_LIMITS_COLLECTION,
     FirestoreDailyGenerationQuotaRepository,
+    _document_id,
 )
 
 from .conftest import requires_firestore_emulator
 
 TODAY = date(2026, 1, 15)
 TOMORROW = date(2026, 1, 16)
+
+
+@requires_firestore_emulator
+def test_expire_at_is_written_for_ttl_and_scoped_to_the_specific_day(firestore_client):
+    """See task 13 of the security/ops audit — this field is what a
+    `gcloud firestore fields ttls update` policy would attach to."""
+    repo = FirestoreDailyGenerationQuotaRepository(client=firestore_client, success_cap=5, attempt_cap=10)
+
+    repo.try_reserve_attempt(TODAY)
+
+    raw = firestore_client.collection(RATE_LIMITS_COLLECTION).document(_document_id(TODAY)).get().to_dict()
+    expected = datetime.combine(TODAY, time.min, tzinfo=timezone.utc) + timedelta(days=7)
+    assert raw["expireAt"] == expected
 
 
 @requires_firestore_emulator

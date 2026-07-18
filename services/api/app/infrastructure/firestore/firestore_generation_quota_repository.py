@@ -18,18 +18,29 @@ emulator, real-concurrency behavior unverified," the same honest framing
 docs/scalability.md already uses for composite indexes.
 """
 
-from datetime import date
+from datetime import date, datetime, time, timezone
 
 from google.cloud import firestore
 
 from app.application.ports import DEFAULT_DAILY_ATTEMPT_CAP, DEFAULT_DAILY_SUCCESS_CAP, QuotaStatus
 from app.infrastructure.firestore.firestore_client import get_firestore_client
+from app.infrastructure.firestore.ttl import RATE_LIMIT_RETENTION
 
 RATE_LIMITS_COLLECTION = "rate_limits"
 
 
 def _document_id(today: date) -> str:
     return f"case_generation_{today.isoformat()}"
+
+
+def _expire_at_for(today: date) -> datetime:
+    """UTC midnight at the start of `today`, plus the retention window —
+    computed from the injected `today`, never datetime.now(), matching
+    this whole repository's existing date-injection discipline (see
+    DailyGenerationQuotaRepository's docstring). A few days' grace past
+    the day this counter document was actually for, not deleted the
+    instant it stops being read."""
+    return datetime.combine(today, time.min, tzinfo=timezone.utc) + RATE_LIMIT_RETENTION
 
 
 class FirestoreDailyGenerationQuotaRepository:
@@ -69,7 +80,9 @@ class FirestoreDailyGenerationQuotaRepository:
             current = data.get(field, 0)
             if current >= cap:
                 return False
-            transaction.set(doc_ref, {field: current + 1}, merge=True)
+            transaction.set(
+                doc_ref, {field: current + 1, "expireAt": _expire_at_for(today)}, merge=True
+            )
             return True
 
         try:
