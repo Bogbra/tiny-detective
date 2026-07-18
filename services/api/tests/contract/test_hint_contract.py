@@ -63,18 +63,31 @@ def test_hint_endpoint_rate_limits_by_caller(client):
     """5/minute per caller (app/api/rate_limiting.py), independent of the
     domain-level per-case hint limit (HintPolicy, tested above) — a
     different player each time keeps every individual request under that
-    domain limit, isolating this test to the rate limiter specifically."""
-    for _ in range(5):
-        player = client.post("/players").json()
-        response = client.post(
-            "/cases/case_museum_001/hint", json={"playerId": player["playerId"]}
-        )
+    domain limit, isolating this test to the rate limiter specifically.
+
+    Pre-creates all 6 players up front, then resets the shared limiter
+    before exercising /hint: POST /players has its own, separate,
+    much-lower limit (see rate_limiting.py's per_instance_limit — divided
+    for instance-count-awareness per task 5 of the security/ops audit),
+    which would otherwise be exhausted by this test's own setup before ever
+    reaching the /hint assertions this test is actually about.
+    """
+    from app.api.rate_limiting import limiter
+
+    player_ids = []
+    for _ in range(6):
+        # Reset before each creation too — POST /players' own limit (4)
+        # is lower than the 6 we need here, and this test has nothing to
+        # do with that endpoint's limit specifically.
+        limiter.reset()
+        player_ids.append(client.post("/players").json()["playerId"])
+    limiter.reset()
+
+    for player_id in player_ids[:5]:
+        response = client.post("/cases/case_museum_001/hint", json={"playerId": player_id})
         assert response.status_code == 200
 
-    sixth_player = client.post("/players").json()
-    sixth = client.post(
-        "/cases/case_museum_001/hint", json={"playerId": sixth_player["playerId"]}
-    )
+    sixth = client.post("/cases/case_museum_001/hint", json={"playerId": player_ids[5]})
     assert sixth.status_code == 429
 
 

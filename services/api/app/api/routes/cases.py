@@ -12,7 +12,7 @@ from app.api.dependencies import (
     get_player_repository,
 )
 from app.api.mappers import to_case_response
-from app.api.rate_limiting import limiter
+from app.api.rate_limiting import limiter, per_instance_limit
 from app.application.errors import CaseNotFoundError, PlayerNotFoundError
 from app.application.ports import (
     AttemptRepository,
@@ -59,7 +59,7 @@ def get_case(
 
 
 @router.post("/cases/{case_id}/solution", response_model=SubmitSolutionResponse)
-@limiter.limit("10/minute")
+@limiter.limit(per_instance_limit(10))
 def submit_solution(
     request: Request,
     case_id: str,

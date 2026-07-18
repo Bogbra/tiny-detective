@@ -1,6 +1,11 @@
 from fastapi import Request
 
-from app.api.rate_limiting import TRUSTED_PROXY_HOPS_ENV_VAR, _client_ip
+from app.api.rate_limiting import (
+    RATE_LIMIT_MAX_INSTANCES_ENV_VAR,
+    TRUSTED_PROXY_HOPS_ENV_VAR,
+    _client_ip,
+    per_instance_limit,
+)
 
 
 def _make_request(headers: dict[str, str] | None = None, client_host: str = "10.0.0.1") -> Request:
@@ -68,3 +73,37 @@ def test_whitespace_and_empty_entries_are_ignored():
 def test_empty_header_falls_back_to_socket_peer_address():
     request = _make_request({"x-forwarded-for": ""}, client_host="192.168.1.1")
     assert _client_ip(request) == "192.168.1.1"
+
+
+def test_per_instance_limit_divides_by_default_max_instances():
+    # Default RATE_LIMIT_MAX_INSTANCES is 3 — ceil(10/3) = 4.
+    assert per_instance_limit(10) == "4/minute"
+
+
+def test_per_instance_limit_ceiling_divides_exact_multiples():
+    assert per_instance_limit(9) == "3/minute"
+
+
+def test_per_instance_limit_never_drops_below_one_per_minute(monkeypatch):
+    monkeypatch.setenv(RATE_LIMIT_MAX_INSTANCES_ENV_VAR, "10")
+    assert per_instance_limit(1) == "1/minute"
+
+
+def test_per_instance_limit_respects_configured_max_instances(monkeypatch):
+    monkeypatch.setenv(RATE_LIMIT_MAX_INSTANCES_ENV_VAR, "5")
+    assert per_instance_limit(10) == "2/minute"
+
+
+def test_per_instance_limit_falls_back_to_default_on_invalid_env(monkeypatch):
+    monkeypatch.setenv(RATE_LIMIT_MAX_INSTANCES_ENV_VAR, "not-a-number")
+    assert per_instance_limit(10) == "4/minute"
+
+
+def test_per_instance_limit_clamps_zero_or_negative_to_one_instance(monkeypatch):
+    # Clamped to 1 (not the default 3) — treats a nonsensical "0 instances"
+    # config as "assume no division," the more permissive failure mode.
+    monkeypatch.setenv(RATE_LIMIT_MAX_INSTANCES_ENV_VAR, "0")
+    assert per_instance_limit(3) == "3/minute"
+
+    monkeypatch.setenv(RATE_LIMIT_MAX_INSTANCES_ENV_VAR, "-5")
+    assert per_instance_limit(3) == "3/minute"

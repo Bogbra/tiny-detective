@@ -28,8 +28,29 @@ appends its own hop, so the real client is then the second-to-last entry.
 
 Falls back to the raw peer address when the header is absent (local dev,
 tests).
+
+**Instance-count awareness.** slowapi's default storage is an in-memory
+dict, counted per running process — with Cloud Run's `--max-instances=3`
+(ADR-0006), a caller whose requests land on different instances can see up
+to 3x any single `@limiter.limit(...)` value before any one process's
+counter trips. `per_instance_limit(intended_per_minute)` divides an
+intended cluster-wide-equivalent rate by `RATE_LIMIT_MAX_INSTANCES` (env
+var, default 3, matching `--max-instances`) so the configured per-process
+limit stays close to the intended total even under worst-case instance
+spread — used for POST /players and POST /cases/{id}/solution, the two
+endpoints whose only real defense against write-volume abuse IS this
+limiter. POST /hint and POST /cases/generate deliberately keep their
+existing literal values instead (5/minute, 3/minute) — both already have a
+genuinely cluster-wide backstop underneath the per-IP limiter (the domain
+HintPolicy's per-case hint cap, and the Firestore-atomic daily generation
+quota respectively), so the 3x per-IP gap there is a fairness/burst
+concern, not an unbounded-cost one; dividing those down to ~1-2/minute
+would make the endpoints borderline unusable for a real single player for
+a gap that's already backstopped elsewhere. See ADR-0006's amendment for
+the full reasoning.
 """
 
+import math
 import os
 
 from fastapi import Request
@@ -38,6 +59,25 @@ from slowapi.util import get_remote_address
 
 DEFAULT_TRUSTED_PROXY_HOPS = 1
 TRUSTED_PROXY_HOPS_ENV_VAR = "TRUSTED_PROXY_HOPS"
+
+DEFAULT_RATE_LIMIT_MAX_INSTANCES = 3
+RATE_LIMIT_MAX_INSTANCES_ENV_VAR = "RATE_LIMIT_MAX_INSTANCES"
+
+
+def per_instance_limit(intended_per_minute: int) -> str:
+    raw = os.environ.get(RATE_LIMIT_MAX_INSTANCES_ENV_VAR)
+    try:
+        max_instances = int(raw) if raw is not None else DEFAULT_RATE_LIMIT_MAX_INSTANCES
+    except ValueError:
+        max_instances = DEFAULT_RATE_LIMIT_MAX_INSTANCES
+    max_instances = max(max_instances, 1)
+    # Ceiling division: rounds up so the per-instance limit never drops to
+    # zero, at the cost of the true worst-case cluster total being able to
+    # exceed intended_per_minute by a little (e.g. 10 -> 4/instance -> a
+    # worst-case cluster total of 12, not 10) — still a real, meaningful
+    # bound, not a cosmetic one.
+    per_instance = math.ceil(intended_per_minute / max_instances)
+    return f"{per_instance}/minute"
 
 
 def _trusted_proxy_hops() -> int:

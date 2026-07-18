@@ -115,25 +115,26 @@ def test_repeat_submission_scores_zero_and_flags_already_solved(client):
 
 
 def test_submit_solution_rate_limits_by_caller(client):
-    """10/minute (app/api/rate_limiting.py) — see task 4 of the security/ops
-    audit. Reuses one player across all 11 calls deliberately (repeats
-    after the first just come back already_solved, still a real 200) so
-    this test isn't confounded by POST /players' own separate 10/minute
-    limit — the two endpoints are rate-limited independently."""
+    """Intended cluster-wide rate is 10/minute, but the enforced
+    per-process value is ceil(10/3)=4 (app/api/rate_limiting.py's
+    per_instance_limit) — see tasks 4 and 5 of the security/ops audit.
+    Reuses one player across all calls deliberately (repeats after the
+    first just come back already_solved, still a real 200) so this test
+    isn't confounded by POST /players' own separate, independent limit."""
     player = client.post("/players").json()
 
-    for _ in range(10):
+    for _ in range(4):
         response = client.post(
             "/cases/case_museum_001/solution",
             json={"playerId": player["playerId"], "suspectId": "suspect_3"},
         )
         assert response.status_code == 200
 
-    eleventh = client.post(
+    fifth = client.post(
         "/cases/case_museum_001/solution",
         json={"playerId": player["playerId"], "suspectId": "suspect_3"},
     )
-    assert eleventh.status_code == 429
+    assert fifth.status_code == 429
 
 
 def test_player_score_reflects_submission(client):
