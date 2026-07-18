@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Datenschutzerklärung — Tiny Detective AI</title>
+  <style>
+    body {
+      background: #070600;
+      color: #FFFAFF;
+      font-family: 'Avenir Next', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+    }
+    h1 { font-size: 22px; margin-bottom: 8px; }
+    h2 { font-size: 18px; margin-top: 32px; }
+    h3 { font-size: 16px; margin-top: 20px; }
+    a { color: #FFFAFF; }
+    .todo {
+      background: #683257;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .updated { opacity: 0.7; font-size: 14px; margin-bottom: 24px; }
+    .back { display: inline-block; margin-top: 40px; }
+    table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.15); vertical-align: top; }
+    th { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Datenschutzerklärung</h1>
+  <p class="updated">Stand: <span class="todo">TODO(operator): Datum der letzten Aktualisierung eintragen</span></p>
+
+  <p>
+    Diese Erklärung informiert darüber, welche Daten bei der Nutzung von Tiny Detective AI verarbeitet werden,
+    zu welchem Zweck, und wie lange sie gespeichert bleiben. Tiny Detective AI ist ein nicht-kommerzielles
+    Portfolio-Projekt; es findet keine Profilbildung, kein Tracking über Sitzungen hinweg und keine Weitergabe
+    von Daten zu Werbezwecken statt.
+  </p>
+
+  <h2>Verantwortlicher</h2>
+  <p>
+    <span class="todo">TODO(operator): Name</span><br>
+    <span class="todo">TODO(operator): Anschrift</span><br>
+    E-Mail: <span class="todo">TODO(operator): Kontakt-E-Mail-Adresse</span>
+  </p>
+
+  <h2>Welche Daten verarbeitet werden</h2>
+
+  <h3>Anonyme Spieler-ID</h3>
+  <p>
+    Beim Start des Spiels wird serverseitig eine zufällige, anonyme Spieler-ID (UUID) erzeugt — kein Konto, keine
+    E-Mail-Adresse, kein Name, keine sonstigen personenbezogenen Angaben werden abgefragt. Diese ID wird aktuell
+    <strong>nicht</strong> browserseitig gespeichert (kein Cookie, kein LocalStorage) — bei jedem neuen Laden der
+    Seite wird eine neue, unabhängige Spieler-ID erzeugt. Es findet daher keine Wiedererkennung über mehrere
+    Sitzungen oder Geräte hinweg statt.
+  </p>
+
+  <h3>Spielstand-Daten</h3>
+  <p>
+    Zur anonymen Spieler-ID werden serverseitig gespeichert: Punktestand, aktuelle Erfolgssträhne ("Streak"),
+    abgegebene Fall-Lösungsversuche (gewählter Verdächtiger, richtig/falsch, Punktzahl) und angeforderte Hinweise
+    (Falltext-Bezug, Zeitpunkt). Diese Daten dienen ausschließlich der Spielfunktion selbst (Punktevergabe,
+    Hinweis-Limit pro Fall).
+  </p>
+
+  <h2>Eingesetzte Dienste (Auftragsverarbeiter)</h2>
+  <table>
+    <tr><th>Dienst</th><th>Zweck</th><th>Standort / Anbieter</th></tr>
+    <tr>
+      <td>Firebase Hosting</td>
+      <td>Auslieferung der Web-App (statische Dateien, diese Seite eingeschlossen)</td>
+      <td>Google Ireland Limited / Google LLC</td>
+    </tr>
+    <tr>
+      <td>Google Cloud Run</td>
+      <td>Backend-API (Fall-Abruf, Hinweis-Anfragen, Lösungsabgabe)</td>
+      <td>Google Cloud, Region europe-west1 (Belgien)</td>
+    </tr>
+    <tr>
+      <td>Google Cloud Firestore</td>
+      <td>Speicherung der oben genannten Spielstand-Daten</td>
+      <td>Google Cloud, Region europe-west1 (Belgien)</td>
+    </tr>
+    <tr>
+      <td>OpenAI (API)</td>
+      <td>Erzeugung von Detektivfällen und Spielhinweisen durch KI-Modelle</td>
+      <td>OpenAI, USA — siehe eigene <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">Datenschutzerklärung</a></td>
+    </tr>
+  </table>
+
+  <h3>Was an OpenAI übermittelt wird</h3>
+  <p>
+    Zur Fall-Erzeugung und für Hinweise werden ausschließlich fiktive Falltext-Inhalte (Titel, Schauplatz, Hinweise,
+    Verdächtigen-Aussagen) an OpenAI übermittelt — niemals die anonyme Spieler-ID, niemals Nutzereingaben, die
+    personenbezogene Daten enthalten könnten. Die im Spiel angezeigten Personen (Verdächtige, Namen) sind
+    vollständig KI-generierte, fiktive Figuren ohne Bezug zu realen Personen.
+  </p>
+
+  <h2>Speicherdauer</h2>
+  <p>
+    Fall-Lösungsversuche und Hinweis-Anfragen werden automatisiert nach 180 Tagen gelöscht (Firestore-TTL-Richtlinie
+    auf dem Feld <code>expireAt</code>). Interne, tagesbezogene Zähler zur Missbrauchsvermeidung (z. B. tägliches
+    Limit für KI-Fallerzeugung) werden nach 7 Tagen gelöscht. Es findet keine unbegrenzte Speicherung statt.
+  </p>
+
+  <h2>Rechtsgrundlage</h2>
+  <p>
+    Die Verarbeitung erfolgt auf Grundlage berechtigter Interessen (Art. 6 Abs. 1 lit. f DSGVO) am Betrieb eines
+    funktionsfähigen Spiels (Punktevergabe, Missbrauchsvermeidung durch Rate-Limits). Da keine direkt
+    identifizierenden Daten erhoben werden (die Spieler-ID ist zufällig und nicht mit weiteren Angaben verknüpft),
+    ist die Verarbeitung auf ein Minimum beschränkt.
+  </p>
+
+  <h2>Ihre Rechte</h2>
+  <p>
+    Da die Spieler-ID anonym und nicht sitzungsübergreifend gespeichert wird, kann sie nach Ende einer Sitzung in
+    der Regel nicht mehr einer bestimmten Person zugeordnet und daher nicht gezielt gelöscht werden. Sollten Sie
+    dennoch der Ansicht sein, dass zu Ihrer Person zuordenbare Daten gespeichert wurden (z. B. weil Sie uns eine
+    Spieler-ID mitteilen), können Sie unter der oben genannten E-Mail-Adresse Auskunft, Berichtigung oder Löschung
+    verlangen. Alle Löschanfragen werden manuell bearbeitet.
+  </p>
+
+  <p>
+    Siehe auch: <a href="impressum.html">Impressum</a>
+  </p>
+
+  <a class="back" href="/">&larr; Zurück zum Spiel</a>
+</body>
+</html>

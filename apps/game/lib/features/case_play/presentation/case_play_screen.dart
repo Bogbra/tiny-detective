@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/widgets/legal_footer.dart';
 import '../../case_generation/application/case_generation_repository.dart';
 import '../../case_generation/application/case_generation_view_model.dart';
 import '../../case_generation/presentation/generate_case_button.dart';
@@ -70,6 +71,7 @@ class _CasePlayScreenState extends State<CasePlayScreen> {
           builder: (context, _) => _buildBody(context, widget.viewModel),
         ),
       ),
+      bottomNavigationBar: const SafeArea(child: LegalFooter()),
     );
   }
 
