@@ -93,6 +93,38 @@ Bounded by two independent, atomic, Firestore-backed daily counters (a 50/day su
 - Real Firestore documents exist post-deploy across all five collections (`players`, `daily_cases`, `hint_requests`, `cases`, and `case_attempts` once a solution is submitted) — the thing [ADR-0005](architecture-decisions/ADR-0005-firestore-data-model.md) could only ever check against the emulator.
 - A full browser playthrough against the live URL — load the daily case, request a hint (real OpenAI call, grounded, non-revealing), submit the correct suspect, see the scored result — works end-to-end.
 
+## Staging & Rollback
+
+**No second (staging) environment — a deliberate scope decision, not an oversight.** A fully parallel Cloud Run + Firestore + Firebase Hosting environment would need its own project or namespace, its own budget/IAM setup, and its own data — real ongoing cost and maintenance for a low-traffic portfolio demo where "staging" mostly means "let me look at this before it's live." Two lighter mechanisms cover most of what staging would have bought:
+
+- **PR preview channels** (`.github/workflows/ci.yml`'s `deploy-web-preview` job) — every pull request against `main` gets its own live Firebase Hosting preview URL, built fresh and auto-commented onto the PR, expiring after 7 days. It points at the *real* production Cloud Run API (there's no staging backend) — a real, stated limitation: this reviews the frontend in isolation, not a fully isolated end-to-end environment. Still real value for anything UI-facing (the design-system work, the case-generation checklist, the result-screen juice) without a second backend to pay for and keep in sync. Secrets aren't available to `pull_request` runs from forked repos (a GitHub Actions restriction) — acceptable for a single-contributor repo not expecting external fork PRs.
+- **Fast, tested rollback** (below) instead of a pre-production gate — if staging's job is "catch a problem before it's live," a fast, well-understood way to undo a bad deploy covers the case where something slips through anyway, which a solo-maintainer demo project will hit less often than the cost of maintaining a second environment would justify.
+
+### Rolling Back Cloud Run
+
+Every deploy creates a new, immutable revision; old revisions aren't deleted, just no longer receiving traffic. Rollback is a traffic-split change, not a redeploy:
+
+```bash
+# List revisions, newest first, to find the one to roll back to
+gcloud run revisions list --service=tiny-detective-api --region=europe-west1
+
+# Shift 100% of traffic back to a specific known-good revision
+gcloud run services update-traffic tiny-detective-api \
+  --region=europe-west1 \
+  --to-revisions=tiny-detective-api-00042-abc=100
+```
+
+Takes effect immediately (no rebuild, no cold start beyond whatever that revision's own instances need) — the fastest fix for a bad backend deploy. Confirm with `curl .../health` and a couple of the "Verified Live" checks above before considering it resolved, not just the traffic-split command succeeding.
+
+### Rolling Back Firebase Hosting
+
+Two ways, in order of how urgent it is:
+
+1. **Console** (fastest for an active incident): Firebase Console → Hosting → Release history → find the last good release → "⋮" menu → Rollback. A few clicks, no CLI/gcloud auth needed on whatever machine you're at.
+2. **CLI** (scriptable/repeatable): `firebase hosting:clone SOURCE_SITE_ID:SOURCE_CHANNEL_ID TARGET_SITE_ID:live --project="$GCP_PROJECT_ID"`, cloning a known-good previous release (or a PR preview channel's content, if that's the version to restore) onto the live channel.
+
+Neither of these requires a new Flutter build — both restore a previously-built, already-verified release, which is the point: a rollback should never depend on the broken build pipeline being healthy enough to produce a new artifact.
+
 ## What's Still Manual
 
 - Firebase/GCP project creation, billing account linkage, and all IAM/WIF/Secret Manager setup were one-time `gcloud`/`firebase` CLI operations, not scripted into any workflow — reasonable for a single project, would need real infrastructure-as-code (Terraform or similar) if this pattern had to repeat.

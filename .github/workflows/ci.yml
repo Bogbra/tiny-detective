@@ -38,6 +38,53 @@ jobs:
       - run: flutter test
       - run: flutter build web --release
 
+  # PR preview channel, not a full staging environment (see task 16 of the
+  # security/ops audit and docs/deployment.md's "Staging & Rollback"
+  # section for why a second parallel environment wasn't built) — every
+  # PR against main gets its own live, reviewable Firebase Hosting URL,
+  # auto-commented onto the PR by the action itself, expiring after 7
+  # days. `channelId` is deliberately omitted: the action's own default
+  # behavior on a pull_request event is to create/update a channel scoped
+  # to that PR rather than touching the live channel — no separate
+  # per-PR naming logic needed here.
+  #
+  # Points at the real production Cloud Run API (same API_BASE_URL as the
+  # real deploy), not a staging backend — there isn't one. A frontend-only
+  # preview against the real API is still real review value (see the
+  # rendered UI, click through the real flows) without standing up and
+  # paying for a second full backend+Firestore environment for a
+  # low-traffic demo project; stated as a real, deliberate scope limit,
+  # not silently assumed away.
+  #
+  # Secrets aren't available to pull_request runs from forked
+  # repositories (a GitHub Actions security restriction, not a bug here)
+  # — this job simply won't have FIREBASE_SERVICE_ACCOUNT in that case and
+  # will fail on the deploy step. Acceptable for a single-contributor
+  # demo repo not expecting external fork PRs; would need
+  # pull_request_target (with its own real security trade-offs) to
+  # support that case.
+  deploy-web-preview:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/game
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.6
+          cache: true
+      - run: flutter pub get
+      - run: flutter build web --release --dart-define=API_BASE_URL=https://tiny-detective-api-n7fn34d2jq-ew.a.run.app
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ vars.GCP_PROJECT_ID }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   backend-checks:
     runs-on: ubuntu-latest
     defaults:
