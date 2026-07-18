@@ -59,7 +59,9 @@ def get_case(
 
 
 @router.post("/cases/{case_id}/solution", response_model=SubmitSolutionResponse)
+@limiter.limit("10/minute")
 def submit_solution(
+    request: Request,
     case_id: str,
     body: SubmitSolutionRequest,
     case_repository: CaseRepository = Depends(get_case_repository),

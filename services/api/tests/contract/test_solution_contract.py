@@ -29,6 +29,31 @@ def test_submit_incorrect_solution(client):
     assert body["streak"] == 0
 
 
+def test_submit_solution_rejects_oversized_player_id(client):
+    response = client.post(
+        "/cases/case_museum_001/solution",
+        json={"playerId": "p" * 65, "suspectId": "suspect_1"},
+    )
+    assert response.status_code == 422
+
+
+def test_submit_solution_rejects_player_id_with_invalid_characters(client):
+    response = client.post(
+        "/cases/case_museum_001/solution",
+        json={"playerId": "not valid! id", "suspectId": "suspect_1"},
+    )
+    assert response.status_code == 422
+
+
+def test_submit_solution_rejects_empty_suspect_id(client):
+    player = client.post("/players").json()
+    response = client.post(
+        "/cases/case_museum_001/solution",
+        json={"playerId": player["playerId"], "suspectId": ""},
+    )
+    assert response.status_code == 422
+
+
 def test_submit_unknown_suspect_returns_400(client):
     player = client.post("/players").json()
 
@@ -87,6 +112,28 @@ def test_repeat_submission_scores_zero_and_flags_already_solved(client):
     score = client.get(f"/scores/{player_id}").json()
     assert score["totalScore"] == 100
     assert score["streak"] == 1
+
+
+def test_submit_solution_rate_limits_by_caller(client):
+    """10/minute (app/api/rate_limiting.py) — see task 4 of the security/ops
+    audit. Reuses one player across all 11 calls deliberately (repeats
+    after the first just come back already_solved, still a real 200) so
+    this test isn't confounded by POST /players' own separate 10/minute
+    limit — the two endpoints are rate-limited independently."""
+    player = client.post("/players").json()
+
+    for _ in range(10):
+        response = client.post(
+            "/cases/case_museum_001/solution",
+            json={"playerId": player["playerId"], "suspectId": "suspect_3"},
+        )
+        assert response.status_code == 200
+
+    eleventh = client.post(
+        "/cases/case_museum_001/solution",
+        json={"playerId": player["playerId"], "suspectId": "suspect_3"},
+    )
+    assert eleventh.status_code == 429
 
 
 def test_player_score_reflects_submission(client):

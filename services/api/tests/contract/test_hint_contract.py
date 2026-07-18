@@ -24,6 +24,20 @@ def test_hint_response_shape(client):
     assert body["text"]
 
 
+def test_hint_rejects_oversized_player_id(client):
+    response = client.post(
+        "/cases/case_museum_001/hint", json={"playerId": "p" * 65}
+    )
+    assert response.status_code == 422
+
+
+def test_hint_rejects_player_id_with_invalid_characters(client):
+    response = client.post(
+        "/cases/case_museum_001/hint", json={"playerId": "../etc/passwd"}
+    )
+    assert response.status_code == 422
+
+
 def test_hint_for_unregistered_player_returns_404(client):
     """Closes the hint-limit bypass: a random UUID that was never POSTed to
     /players must not get its own fresh hint budget just by being used as
