@@ -1,4 +1,6 @@
-"""Per-request structured access logging + Cloud Trace correlation.
+"""Per-request structured access logging + Cloud Trace correlation, and the
+one place unhandled exceptions get logged in Error-Reporting-detectable
+shape (see task 12 of the security/ops audit).
 
 Parses X-Cloud-Trace-Context (the header Cloud Run's load balancer sets on
 every incoming request: "TRACE_ID/SPAN_ID;o=TRACE_TRUE") into the full
@@ -9,6 +11,19 @@ before the route handler runs — so every log line emitted anywhere during
 this request's handling, not just this middleware's own access-log line,
 gets attributed to the right trace and groups together in Cloud Logging's
 "show request logs" view.
+
+Without the try/except here, an unhandled exception in a route never
+reaches our own logger at all — Starlette re-raises it straight to the
+ASGI server, which prints a plain-text traceback to stderr. Cloud Logging
+*can* often heuristically detect a plain-text Python traceback and infer
+severity ERROR for Error Reporting, but that's a best-effort fallback, not
+a guarantee; catching it here and logging with exc_info=True through
+JsonFormatter gives a real, always-present severity: "ERROR" field plus a
+structured exception field — genuinely automatic Error Reporting pickup
+(Cloud Run forwards Cloud Logging entries shaped this way to Error
+Reporting with no separate SDK or DSN needed), not a hopeful assumption
+about text parsing. Re-raises after logging so FastAPI/Starlette's own
+default 500 response still reaches the client unchanged.
 """
 
 import logging
@@ -41,9 +56,28 @@ async def logging_middleware(request: Request, call_next):
     set_trace_id(_trace_resource_name(request))
 
     start = time.monotonic()
-    response = await call_next(request)
-    latency_ms = (time.monotonic() - start) * 1000
+    try:
+        response = await call_next(request)
+    except Exception:
+        latency_ms = (time.monotonic() - start) * 1000
+        logger.error(
+            "%s %s -> unhandled exception (%.1fms)",
+            request.method,
+            request.url.path,
+            latency_ms,
+            exc_info=True,
+            extra={
+                "httpRequest": {
+                    "requestMethod": request.method,
+                    "requestUrl": str(request.url),
+                    "status": 500,
+                    "latency": f"{latency_ms / 1000:.3f}s",
+                }
+            },
+        )
+        raise
 
+    latency_ms = (time.monotonic() - start) * 1000
     logger.info(
         "%s %s -> %d (%.1fms)",
         request.method,
