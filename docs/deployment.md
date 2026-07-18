@@ -59,6 +59,19 @@ Bounded by two independent, atomic, Firestore-backed daily counters (a 50/day su
 
 `REQUIRE_PERSISTENT_STORAGE=true` is set only in the Cloud Run deploy (`deploy.yml`). At app startup, `app/main.py` checks this against `is_firestore_configured()` and raises immediately if it's true but Firestore isn't actually configured — e.g. a future deploy that forgets to set `GOOGLE_CLOUD_PROJECT`. Without this, that mistake would be silent: the app starts fine on the in-memory fallback, `/health` returns `200` (it doesn't touch storage), and the deploy job's smoke test — the one thing that was supposed to catch a broken deploy — would report success on a backend quietly forgetting every player, hint, and attempt on its next cold start. With the guard, the container fails to start, Cloud Run never reports it healthy, and the smoke test's `curl` gets a connection failure instead of a false positive. No-op locally and under pytest (the env var is never set there), so local dev and the test suite are unaffected.
 
+## Security Headers (Firebase Hosting)
+
+`firebase.json`'s `hosting.headers` applies to every response: HSTS (`max-age=31536000; includeSubDomains`), `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, a `Permissions-Policy` disabling camera/microphone/geolocation (unused by this app), and a `Content-Security-Policy` tuned for Flutter web specifically:
+
+- `script-src 'self' 'wasm-unsafe-eval'` — the CanvasKit/skwasm renderer compiles WebAssembly at runtime; without `'wasm-unsafe-eval'` the app fails to boot at all (verified live, see below).
+- `style-src 'self' 'unsafe-inline'` — Flutter's web shell injects `<style>` tags at runtime for font/text rendering; a stricter policy here blocked rendering.
+- `connect-src 'self' https://tiny-detective-api-n7fn34d2jq-ew.a.run.app` — the one external origin the app actually calls (`API_BASE_URL`, baked in at build time via `--dart-define`). Hardcoded rather than templated since this project only has the one real deployed environment; would need to become dynamic (or a wildcard) if a second environment (staging) were ever added.
+- `img-src`/`font-src` allow `data:` for any inline/data-URI assets; everything else defaults to `'self'`; `object-src 'none'` and `frame-ancestors 'self'` are hardening with no functional cost.
+
+CanvasKit/skwasm assets are bundled locally by `flutter build web` (`build/web/canvaskit/`), not loaded from an external CDN — confirmed by inspecting the build output and `web/index.html`'s unmodified template — so no `gstatic.com`-style CDN origin needed to be allowed.
+
+**Verified live, not just deployed**: after pushing, the actual production URL was checked for the headers via `curl -I`, and the site was loaded in a real headless browser (not just an HTTP 200 check) to confirm it still renders the daily case end-to-end with the CSP active — Flutter web + CSP is a known-finicky combination, and "the deploy succeeded" doesn't mean "the CSP didn't silently break WASM compilation or style injection."
+
 ## Secrets and IAM
 
 - `ADMIN_API_TOKEN` and `OPENAI_API_KEY` live in Secret Manager, injected into Cloud Run via `--set-secrets` (never as plain env vars, never printed during setup).
