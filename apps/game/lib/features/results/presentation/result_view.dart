@@ -1,6 +1,7 @@
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../domain/case_result.dart';
 
 /// "Juice" — confetti, a count-up on score/streak, and a brief pulse on the
@@ -69,7 +70,7 @@ class _ResultViewState extends State<ResultView> with SingleTickerProviderStateM
                   scale: _pulseScale,
                   child: Icon(
                     widget.result.correct ? Icons.check_circle : Icons.cancel,
-                    color: widget.result.correct ? Colors.green : Colors.red,
+                    color: widget.result.correct ? AppColors.success : AppColors.failure,
                     size: 64,
                   ),
                 ),

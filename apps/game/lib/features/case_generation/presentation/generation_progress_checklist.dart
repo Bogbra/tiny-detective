@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../application/case_generation_view_model.dart';
 
 const _stepLabels = [
@@ -69,9 +70,9 @@ class _StepRow extends StatelessWidget {
       case 'running':
         return const CircularProgressIndicator(strokeWidth: 2);
       case 'passed':
-        return const Icon(Icons.check_circle, color: Colors.green, size: 20);
+        return const Icon(Icons.check_circle, color: AppColors.success, size: 20);
       case 'rejected':
-        return const Icon(Icons.cancel, color: Colors.red, size: 20);
+        return const Icon(Icons.cancel, color: AppColors.failure, size: 20);
       default:
         return const Icon(Icons.circle_outlined, size: 20);
     }

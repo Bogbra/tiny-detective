@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'core/theme/app_theme.dart';
 import 'features/case_generation/application/case_generation_repository.dart';
 import 'features/case_play/application/case_play_view_model.dart';
 import 'features/case_play/application/case_repository.dart';
@@ -17,19 +18,11 @@ class TinyDetectiveApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = buildAppTheme();
     return MaterialApp(
       title: 'Tiny Detective',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: theme,
+      darkTheme: theme,
       themeMode: ThemeMode.dark,
       home: CasePlayScreen(
         viewModel: CasePlayViewModel(caseRepository),
