@@ -95,13 +95,29 @@ class OpenAILogicConsistencyEvaluator:
     # judgment would not produce.
     PROMPT_FILE = "evaluate_case_logic_v2.md"
 
-    def __init__(self, model: str = DEFAULT_MODEL, temperature: float = DEFAULT_TEMPERATURE) -> None:
+    def __init__(
+        self,
+        model: str = DEFAULT_MODEL,
+        temperature: float = DEFAULT_TEMPERATURE,
+        prompt_file: str | None = None,
+    ) -> None:
         self.model = model
         self.temperature = temperature
-        self.prompt_version = Path(self.PROMPT_FILE).stem
+        # prompt_file override: the deterministic-logic pipeline (see
+        # logic_builder.py, generator.CaseProseRenderer) uses
+        # evaluate_case_logic_v3.md, which is calibrated for its
+        # guaranteed-by-construction deduction pattern instead of
+        # independently re-deriving solvability from scratch — v2 stays
+        # the default for the original single-shot LLM pipeline, which
+        # still needs the stricter, from-scratch check. See ADR-0007's
+        # redesign addendum for why v2 alone rejected 20/20 real
+        # deterministic-pipeline candidates despite the underlying logic
+        # being verified correct by logic_builder.solve().
+        self.prompt_file = prompt_file or self.PROMPT_FILE
+        self.prompt_version = Path(self.prompt_file).stem
         self.last_usage: TokenUsage | None = None
 
     def evaluate(self, candidate: CaseCandidate) -> EvaluationResult:
-        result, usage = _judge(self.model, self.temperature, self.PROMPT_FILE, candidate, "consistent")
+        result, usage = _judge(self.model, self.temperature, self.prompt_file, candidate, "consistent")
         self.last_usage = usage
         return result

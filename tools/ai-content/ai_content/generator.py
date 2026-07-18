@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
 
-from .models import TokenUsage
+from .fidelity_checker import check_fidelity
+from .logic_builder import CaseLogic
+from .models import CandidateClue, CandidateSuspect, CaseCandidate, TokenUsage
 from .openai_client import get_openai_client
 from .prompts import load_prompt
 
@@ -25,6 +27,18 @@ DEFAULT_TEMPERATURE = 0.6
 
 class GenerationError(Exception):
     pass
+
+
+class PromptFidelityError(Exception):
+    """The LLM's rendered prose dropped or paraphrased a required fact from
+    the CaseLogic it was given — see fidelity_checker.check_fidelity. This
+    is a real, expected-to-be-rare rejection reason for CaseProseRenderer,
+    not a bug: the render prompt asks for verbatim phrases specifically so
+    this is mechanically checkable."""
+
+    def __init__(self, reasons: tuple[str, ...]) -> None:
+        self.reasons = reasons
+        super().__init__("; ".join(reasons))
 
 
 class OpenAICaseGenerator:
@@ -75,3 +89,116 @@ class OpenAICaseGenerator:
             return json.loads(content)
         except json.JSONDecodeError as exc:
             raise GenerationError(f"model did not return valid JSON: {exc}") from exc
+
+
+def case_logic_to_prompt_json(case_logic: CaseLogic) -> dict:
+    return {
+        "settingSentence": case_logic.template.setting_sentence,
+        "problemSentence": case_logic.template.problem_sentence,
+        "missingItem": case_logic.template.missing_item,
+        "incidentLocation": case_logic.template.incident_location,
+        "suspects": [
+            {
+                "token": s.token,
+                "role": s.role,
+                "isCulprit": s.is_culprit,
+                "claimedLocation": s.claimed_location,
+                "signatureItem": s.signature_item,
+            }
+            for s in case_logic.suspects
+        ],
+        "clues": [
+            {"clueId": c.clue_id, "kind": c.kind, "requiredPhrases": list(c.required_phrases)}
+            for c in case_logic.clues
+        ],
+    }
+
+
+def build_case_candidate_from_rendered(case_logic: CaseLogic, rendered: dict) -> CaseCandidate:
+    # Identity (is_culprit, suspect ordering) comes entirely from case_logic
+    # — never read from the LLM response, since the whole point of this
+    # pipeline is that the LLM was never asked to decide it. Only prose
+    # (name/publicStatement/privateReasoning/clue text/title/etc.) is read
+    # from rendered.
+    suspects_raw = rendered.get("suspects", [])
+    names_by_token = {s.get("token"): s.get("name", "") for s in suspects_raw}
+    statements_by_token = {s.get("token"): s.get("publicStatement", "") for s in suspects_raw}
+    reasoning_by_token = {s.get("token"): s.get("privateReasoning", "") for s in suspects_raw}
+
+    suspects = tuple(
+        CandidateSuspect(
+            suspect_id=f"suspect_{i}",
+            name=names_by_token.get(s.token) or s.role,
+            role=s.role,
+            public_statement=statements_by_token.get(s.token, ""),
+            private_reasoning=reasoning_by_token.get(s.token, ""),
+            is_culprit=s.is_culprit,
+        )
+        for i, s in enumerate(case_logic.suspects, start=1)
+    )
+
+    clues_raw = rendered.get("clues", [])
+    clue_text_by_id = {c.get("clueId"): c.get("text", "") for c in clues_raw}
+    clues = tuple(
+        CandidateClue(clue_id=f"clue_{i}", text=clue_text_by_id.get(c.clue_id, ""))
+        for i, c in enumerate(case_logic.clues, start=1)
+    )
+
+    return CaseCandidate(
+        title=rendered.get("title", ""),
+        setting=rendered.get("setting", ""),
+        problem=rendered.get("problem", ""),
+        suspects=suspects,
+        clues=clues,
+        solution_explanation=rendered.get("solutionExplanation", ""),
+        difficulty=None,
+        tone="cozy",
+    )
+
+
+class CaseProseRenderer:
+    """Phase 2 of the deterministic-logic pipeline (see logic_builder.py):
+    takes an already-solved, already-verified CaseLogic and asks the LLM
+    only to write prose around it — it cannot change who's guilty or which
+    detail identifies them, since it's never asked to decide either. See
+    ADR-0007's redesign addendum for why this replaces OpenAICaseGenerator
+    for the live case-generation feature specifically.
+    """
+
+    PROMPT_FILE = "generate_case_v3.md"
+
+    def __init__(self, model: str = DEFAULT_MODEL, temperature: float = DEFAULT_TEMPERATURE) -> None:
+        self.model = model
+        self.temperature = temperature
+        self.prompt_version = Path(self.PROMPT_FILE).stem
+        self.last_usage: TokenUsage | None = None
+
+    def render(self, case_logic: CaseLogic) -> CaseCandidate:
+        client = get_openai_client()
+        response = client.chat.completions.create(
+            model=self.model,
+            temperature=self.temperature,
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": load_prompt(self.PROMPT_FILE)},
+                {"role": "user", "content": json.dumps(case_logic_to_prompt_json(case_logic))},
+            ],
+        )
+        self.last_usage = None
+        if response.usage is not None:
+            self.last_usage = {
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens,
+            }
+        content = response.choices[0].message.content
+        try:
+            rendered = json.loads(content)
+        except json.JSONDecodeError as exc:
+            raise GenerationError(f"model did not return valid JSON: {exc}") from exc
+
+        fidelity = check_fidelity(case_logic, rendered)
+        if not fidelity.passed:
+            raise PromptFidelityError(fidelity.reasons)
+
+        return build_case_candidate_from_rendered(case_logic, rendered)

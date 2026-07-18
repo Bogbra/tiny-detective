@@ -26,21 +26,26 @@ from app.domain.value_objects.publish_status import PublishStatus
 
 logger = logging.getLogger(__name__)
 
-# Revised after live production data (see ADR-0007's addendum): the initial
-# 7-sample estimate (~29% first-attempt pass rate) was optimistic small-sample
-# noise. A 40-call investigation (varying prompt version and temperature)
-# converged on a real rate closer to 5-10%, consistently rejected at the
-# logic-consistency stage for the same root cause (a clue property the
-# solution explanation "matches" to the culprit without any clue or
-# statement actually stating it). Prompt/judge fixes shipped alongside this
-# (generate_case_v2.md, evaluate_case_logic_v2.md) are real quality
-# improvements — the judge no longer echoes its own example text verbatim —
-# but did not measurably move the pass rate on gpt-4o-mini. Given real
-# per-attempt cost is trivial (~$0.0006), attempts were raised rather than
-# continuing to chase a prompt-only fix: 10 attempts at even a pessimistic
-# 5% per-attempt rate still clears ~40% eventual success, versus ~23% at 5
-# attempts.
-MAX_ATTEMPTS_PER_REQUEST = 10
+# Revised again after the redesign in ADR-0007's second addendum: the
+# original single-shot LLM pipeline topped out at a real ~5-10% first-attempt
+# pass rate (root cause: the model inventing a solution it didn't actually
+# verify against its own clues), which is why this used to be 10. That
+# pipeline has been replaced for this feature by a deterministic-logic +
+# LLM-prose-rendering pipeline (ai_content.logic_builder +
+# generator.CaseProseRenderer) — the deduction itself is now guaranteed
+# correct by a Python constraint solver before any LLM call happens, so the
+# LLM's only remaining job is prose, and its only remaining failure modes are
+# rendering compliance (dropping a required phrase — caught by a cheap local
+# fidelity check with no extra API call) and narrative fairness (an innocent
+# suspect's flavor text implying a second motive — caught by a narrowed AI
+# judge, evaluate_case_logic_v3.md). Real measured pass rate: 32.5% across
+# two independent 20-run batches (7/20, 6/20) against the real OpenAI API —
+# roughly 6.5x the old rate, at essentially the same per-attempt cost
+# (~$0.0007-0.0015). At this rate 5 attempts already clears ~86% eventual
+# success (1 - 0.675^5) with a much tighter worst-case wait than the old
+# 10-attempt budget needed — lowered accordingly, not left high out of
+# habit now that the underlying quality problem is actually fixed.
+MAX_ATTEMPTS_PER_REQUEST = 5
 
 QUOTA_EXCEEDED_DETAIL = "daily generation quota reached"
 
