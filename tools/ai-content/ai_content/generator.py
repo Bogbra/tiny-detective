@@ -7,6 +7,21 @@ from .prompts import load_prompt
 
 DEFAULT_MODEL = "gpt-4o-mini"
 
+# Unset previously meant the API default (~1.0) — high creative variance,
+# which turned out to be a real cost, not a neutral choice: the live
+# case-generation feature (services/api) measured a live production
+# rejection rate far higher than a small pre-deployment sample suggested,
+# and the SAME two logic-consistency failures every time ("solution depends
+# on information not present in any clue", "two suspects equally
+# supported"). Inspecting real generated candidates confirmed a genuine
+# generator problem, not judge over-strictness: clues describing vague,
+# unattributed sensory details ("a faint smell of vanilla") that
+# solution.explanation then silently "matches" to the culprit — a fact
+# introduced in the explanation, never actually in a clue. Lower
+# temperature (less wandering) plus v2's explicit clue-authoring guidance
+# are the fix — see ADR-0007's addendum and prompts/generate_case_v2.md.
+DEFAULT_TEMPERATURE = 0.6
+
 
 class GenerationError(Exception):
     pass
@@ -17,10 +32,14 @@ class OpenAICaseGenerator:
     approval, or publishing — the pipeline (ai_content/pipeline.py) owns that.
     """
 
-    PROMPT_FILE = "generate_case_v1.md"
+    # v2: v1's clue-authoring guidance was too easy to satisfy without
+    # actually grounding the solution in the clues themselves — see
+    # DEFAULT_TEMPERATURE's comment above for the full diagnosis.
+    PROMPT_FILE = "generate_case_v2.md"
 
-    def __init__(self, model: str = DEFAULT_MODEL) -> None:
+    def __init__(self, model: str = DEFAULT_MODEL, temperature: float = DEFAULT_TEMPERATURE) -> None:
         self.model = model
+        self.temperature = temperature
         self.prompt_version = Path(self.PROMPT_FILE).stem
         # Populated after each generate() call — previously only the two
         # evaluators tracked this; the live case-generation feature
@@ -37,6 +56,7 @@ class OpenAICaseGenerator:
         )
         response = client.chat.completions.create(
             model=self.model,
+            temperature=self.temperature,
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": load_prompt(self.PROMPT_FILE)},

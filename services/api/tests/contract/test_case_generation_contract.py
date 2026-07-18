@@ -90,4 +90,4 @@ def test_pipeline_exhaustion_reports_a_clean_failed_event_not_a_hang(client):
     events = _parse_sse_events(response.text)
     assert events[-1]["step"] == "failed"
     assert events[-1]["status"] == "done"
-    assert "5 attempts" in events[-1]["detail"]
+    assert "10 attempts" in events[-1]["detail"]

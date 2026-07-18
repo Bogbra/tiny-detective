@@ -83,7 +83,17 @@ class OpenAISafetyEvaluator:
 
 
 class OpenAILogicConsistencyEvaluator:
-    PROMPT_FILE = "evaluate_case_logic_v1.md"
+    # v2: v1's own example reason strings ("solution depends on information
+    # not present in any clue or statement", "two suspects are equally
+    # supported by the clues") were appearing verbatim, identically, across
+    # completely unrelated case candidates — the judge was echoing the
+    # prompt's illustrative examples instead of describing what it actually
+    # found. v2 asks for candidate-specific reasons and shows what that
+    # looks like. Found live in production: real rejection reasons were
+    # checked across multiple different generated cases and were
+    # character-for-character identical, which a genuinely case-specific
+    # judgment would not produce.
+    PROMPT_FILE = "evaluate_case_logic_v2.md"
 
     def __init__(self, model: str = DEFAULT_MODEL, temperature: float = DEFAULT_TEMPERATURE) -> None:
         self.model = model

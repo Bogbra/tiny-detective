@@ -104,15 +104,19 @@ class CaseGenerationAdapter(Protocol):
 
 # successCount cap: the user-visible product budget (50 live-generated
 # cases/day, globally, across all players — see ADR-0007). attemptCount cap:
-# a separate, higher, non-user-facing cost backstop — empirically, roughly
-# 1 in 3-4 attempts actually passes both AI judges (measured against the
-# real API during implementation, not guessed), so bounding only successes
-# would leave rejected-attempt spend structurally unbounded. Both
-# env-var-overridable in app/api/dependencies.py, specifically so the
-# live-verification step can temporarily redeploy with a tiny cap to
-# observe a real 429 without waiting for 50 real successes.
+# a separate, higher, non-user-facing cost backstop, so bounding only
+# successes doesn't leave rejected-attempt spend structurally unbounded.
+# Revised upward after live production data showed the real per-attempt
+# pass rate is closer to 5-10% than the original 29% estimate (see
+# generate_case.py's MAX_ATTEMPTS_PER_REQUEST comment and ADR-0007's
+# addendum) — at that rate, 50 successes/day can realistically need
+# several hundred to ~1000 attempts, and real measured per-attempt cost
+# (~$0.0006) makes that trivial regardless (worst case ~$1.20/day at this
+# cap, still well under the €10 budget alert). The cap exists to catch a
+# genuine runaway, not to be the everyday bottleneck a too-low value would
+# have made it.
 DEFAULT_DAILY_SUCCESS_CAP = 50
-DEFAULT_DAILY_ATTEMPT_CAP = 300
+DEFAULT_DAILY_ATTEMPT_CAP = 2000
 
 
 @dataclass(frozen=True, slots=True)
