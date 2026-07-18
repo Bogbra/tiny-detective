@@ -13,6 +13,44 @@ load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
 OPENAI_API_KEY_ENV_VAR = "OPENAI_API_KEY"
 
+# Without an explicit timeout, the SDK's own default effectively lets a
+# hung upstream call block indefinitely (well past what any caller of this
+# code can tolerate) — for the hint endpoint specifically, that pins a
+# worker thread on a single synchronous request for however long OpenAI's
+# connection stays open, degrading the whole service for everyone else on
+# that instance, not just the one slow request. 30s is generous for a
+# single chat completion call but still bounded. max_retries=1 (not the
+# SDK default of 2): a hint request already has its own deterministic
+# fallback on any failure (see ai_hint_assistant.py) — retrying twice
+# before giving up just adds latency to a path that degrades gracefully
+# anyway, for no real benefit.
+DEFAULT_TIMEOUT_SECONDS = 30.0
+DEFAULT_MAX_RETRIES = 1
+TIMEOUT_ENV_VAR = "OPENAI_TIMEOUT_SECONDS"
+MAX_RETRIES_ENV_VAR = "OPENAI_MAX_RETRIES"
+
+
+def _timeout_seconds() -> float:
+    raw = os.environ.get(TIMEOUT_ENV_VAR)
+    if raw is None:
+        return DEFAULT_TIMEOUT_SECONDS
+    try:
+        value = float(raw)
+    except ValueError:
+        return DEFAULT_TIMEOUT_SECONDS
+    return value if value > 0 else DEFAULT_TIMEOUT_SECONDS
+
+
+def _max_retries() -> int:
+    raw = os.environ.get(MAX_RETRIES_ENV_VAR)
+    if raw is None:
+        return DEFAULT_MAX_RETRIES
+    try:
+        value = int(raw)
+    except ValueError:
+        return DEFAULT_MAX_RETRIES
+    return value if value >= 0 else DEFAULT_MAX_RETRIES
+
 
 class MissingApiKeyError(RuntimeError):
     pass
@@ -43,4 +81,4 @@ def get_openai_client() -> OpenAI:
     api_key = os.environ.get(OPENAI_API_KEY_ENV_VAR)
     if not api_key:
         raise MissingApiKeyError(f"{OPENAI_API_KEY_ENV_VAR} is not set.")
-    return OpenAI(api_key=api_key)
+    return OpenAI(api_key=api_key, timeout=_timeout_seconds(), max_retries=_max_retries())
