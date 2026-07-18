@@ -23,7 +23,13 @@ class CaseGenerationApiClient {
 
   Stream<GenerationEventDto> generateCase() async* {
     final request = http.Request('POST', Uri.parse('$_baseUrl/cases/generate'));
-    final streamedResponse = await _httpClient.send(request);
+    // Times out getting the response headers/status at all (a dead
+    // connection before the stream even opens) — separate from the
+    // per-chunk timeout below, which covers the stream once it's
+    // actually flowing.
+    final streamedResponse = await _httpClient
+        .send(request)
+        .timeout(const Duration(seconds: 15));
 
     if (streamedResponse.statusCode < 200 ||
         streamedResponse.statusCode >= 300) {
@@ -33,7 +39,16 @@ class CaseGenerationApiClient {
 
     final lines = streamedResponse.stream
         .transform(utf8.decoder)
-        .transform(const LineSplitter());
+        .transform(const LineSplitter())
+        // A per-chunk idle timeout, not a total-request one — a full
+        // generation can legitimately run for the whole multi-attempt
+        // retry loop (tens of seconds), but the backend now emits a
+        // ": keep-alive" comment line at least every 15s even mid-attempt
+        // (see cases.py's event_stream), so a real gap this long past
+        // that means the connection actually died, not that generation
+        // is still working. Comment lines don't start with "data: " and
+        // are already skipped by the loop below, unmodified for this.
+        .timeout(const Duration(seconds: 45));
 
     await for (final line in lines) {
       if (!line.startsWith('data: ')) continue;
