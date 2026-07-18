@@ -216,4 +216,17 @@ class GenerateCase:
             completion_tokens,
             cost_usd,
             case_id,
+            # Same data as the message above, also as structured fields —
+            # JsonFormatter (see app/infrastructure/logging) surfaces
+            # these directly in Cloud Logging so cost can be filtered/
+            # aggregated by field instead of parsed out of free text.
+            extra={
+                "caseGeneration": {
+                    "outcome": outcome,
+                    "promptTokens": prompt_tokens,
+                    "completionTokens": completion_tokens,
+                    "costUsd": round(cost_usd, 5),
+                    "caseId": case_id,
+                }
+            },
         )

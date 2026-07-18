@@ -8,6 +8,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from app.api.logging_middleware import logging_middleware
 from app.api.rate_limiting import limiter
 from app.api.routes.admin import router as admin_router
 from app.api.routes.cases import router as cases_router
@@ -16,6 +17,7 @@ from app.api.routes.hints import router as hints_router
 from app.api.routes.players import router as players_router
 from app.api.routes.scores import router as scores_router
 from app.infrastructure.firestore.firestore_client import is_firestore_configured
+from app.infrastructure.logging.json_formatter import JsonFormatter
 
 
 def _require_persistent_storage_if_configured() -> None:
@@ -47,16 +49,28 @@ def _require_persistent_storage_if_configured() -> None:
         )
 
 
-# Without this, app-level `logging.getLogger(__name__).info(...)` calls
-# (e.g. generate_case.py's per-request token/cost logging) are silently
-# dropped: the root logger has no handler and defaults to WARNING, so INFO
-# records never reach stdout — found by checking Cloud Run logs for output
-# that should have been there and finding nothing, not by inspection.
-# uvicorn configures its OWN loggers (uvicorn.error/uvicorn.access) but not
-# arbitrary application loggers. Cloud Run captures stdout/stderr
-# automatically, so a plain basicConfig is enough — no structured-logging
-# library needed for this project's current scale.
-logging.basicConfig(level=logging.INFO)
+# Without a handler at all, app-level `logging.getLogger(__name__).info(...)`
+# calls (e.g. generate_case.py's per-request token/cost logging) are
+# silently dropped: the root logger has no handler and defaults to
+# WARNING, so INFO records never reach stdout — found by checking Cloud
+# Run logs for output that should have been there and finding nothing, not
+# by inspection. uvicorn configures its OWN loggers (uvicorn.error/
+# uvicorn.access) but not arbitrary application loggers.
+#
+# JsonFormatter (not plain basicConfig) so Cloud Logging maps severities
+# correctly — plain text lines all land as severity "Default", which means
+# no filtering by ERROR in the console and no automatic Error Reporting
+# grouping (see JsonFormatter's own docstring, and app/api/logging_middleware.py
+# for the per-request trace-id correlation this also enables).
+def _configure_logging() -> None:
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(JsonFormatter())
+    root_logger = logging.getLogger()
+    root_logger.handlers = [handler]
+    root_logger.setLevel(logging.INFO)
+
+
+_configure_logging()
 
 _require_persistent_storage_if_configured()
 
@@ -77,6 +91,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Registered after CORS/rate-limiting so it wraps outermost — measures
+# and logs total request latency, not just the time inside route handlers.
+app.middleware("http")(logging_middleware)
 
 app.include_router(health_router)
 app.include_router(cases_router)
