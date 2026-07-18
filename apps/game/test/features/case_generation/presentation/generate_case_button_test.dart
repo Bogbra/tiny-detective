@@ -67,7 +67,11 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.textContaining('solution not supported by clues'), findsOneWidget);
+    // The raw backend detail ("solution not supported by clues") must NOT
+    // appear — it's AI-judge/fidelity-check internal reasoning, not
+    // player-facing text. A fixed, friendly message is shown instead.
+    expect(find.textContaining('solution not supported by clues'), findsNothing);
+    expect(find.textContaining("didn't pass our quality check"), findsOneWidget);
     expect(find.byIcon(Icons.cancel), findsOneWidget);
 
     // The real restart: a fresh "generating: running" for attempt 2.

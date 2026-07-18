@@ -74,7 +74,13 @@ class CaseGenerationViewModel extends ChangeNotifier {
     if (_judgedSteps.contains(event.step)) {
       stepStatuses[event.step] = event.status;
       if (event.status == 'rejected') {
-        lastRejectionDetail = event.detail;
+        // Never surface event.detail here — it's the AI judge's/fidelity
+        // check's internal reasoning (case-logic token names like
+        // "SUSPECT_2", judge-internal vocabulary), meant for logs, not
+        // players. A fixed, friendly message instead — same "no raw
+        // backend internals in player-facing text" rule as
+        // ApiException.fromResponseBody.
+        lastRejectionDetail = "That attempt didn't pass our quality check — trying again…";
       }
     }
 
