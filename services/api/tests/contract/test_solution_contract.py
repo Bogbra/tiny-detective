@@ -60,6 +60,35 @@ def test_submit_unknown_player_returns_404(client):
     assert response.status_code == 404
 
 
+def test_repeat_submission_scores_zero_and_flags_already_solved(client):
+    """Closes the score/streak farming gap: resubmitting the same case must
+    not keep granting score or advancing the streak — see task 3 of the
+    security/ops audit."""
+    player = client.post("/players").json()
+    player_id = player["playerId"]
+
+    first = client.post(
+        "/cases/case_museum_001/solution",
+        json={"playerId": player_id, "suspectId": "suspect_3"},
+    ).json()
+    assert first["score"] == 100
+    assert first["streak"] == 1
+    assert first["alreadySolved"] is False
+
+    second = client.post(
+        "/cases/case_museum_001/solution",
+        json={"playerId": player_id, "suspectId": "suspect_3"},
+    ).json()
+    assert second["correct"] is True
+    assert second["score"] == 0
+    assert second["streak"] == 1
+    assert second["alreadySolved"] is True
+
+    score = client.get(f"/scores/{player_id}").json()
+    assert score["totalScore"] == 100
+    assert score["streak"] == 1
+
+
 def test_player_score_reflects_submission(client):
     player = client.post("/players").json()
     player_id = player["playerId"]

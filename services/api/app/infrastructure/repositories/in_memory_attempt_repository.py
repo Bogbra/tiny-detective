@@ -9,3 +9,6 @@ class InMemoryAttemptRepository:
 
     def record(self, attempt: Attempt) -> None:
         self._records.append(attempt)
+
+    def exists_for(self, player_id: str, case_id: str) -> bool:
+        return any(a.player_id == player_id and a.case_id == case_id for a in self._records)

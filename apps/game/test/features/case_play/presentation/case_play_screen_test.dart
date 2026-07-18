@@ -88,6 +88,7 @@ void main() {
         feedback: 'Correct.',
         solutionExplanation: 'Lea was near the case after closing.',
         streak: 1,
+        alreadySolved: false,
       ),
     );
 

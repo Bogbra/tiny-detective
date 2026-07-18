@@ -7,3 +7,4 @@ class SubmitSolutionResponse(ApiModel):
     feedback: str
     solution_explanation: str
     streak: int
+    already_solved: bool

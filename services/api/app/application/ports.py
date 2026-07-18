@@ -42,6 +42,14 @@ class HintRequestRepository(Protocol):
 class AttemptRepository(Protocol):
     def record(self, attempt: Attempt) -> None: ...
 
+    def exists_for(self, player_id: str, case_id: str) -> bool:
+        """Whether this player has already submitted any attempt for this
+        case — the real gate against score/streak farming via unlimited
+        resubmission (see SubmitSolution). Existence, not correctness: even
+        a wrong first attempt already spends the player's one scored shot,
+        matching the "first attempt only" rule regardless of outcome."""
+        ...
+
 
 @dataclass(frozen=True, slots=True)
 class AssistantHint:

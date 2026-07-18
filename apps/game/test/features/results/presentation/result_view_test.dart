@@ -11,6 +11,7 @@ void main() {
       feedback: 'Correct.',
       solutionExplanation: 'Lea was near the case after closing.',
       streak: 2,
+      alreadySolved: false,
     );
 
     await tester.pumpWidget(const MaterialApp(home: ResultView(result: result)));
@@ -36,6 +37,7 @@ void main() {
       feedback: 'Not quite — review the clues again.',
       solutionExplanation: 'Lea was near the case after closing.',
       streak: 0,
+      alreadySolved: false,
     );
 
     await tester.pumpWidget(const MaterialApp(home: ResultView(result: result)));
@@ -50,6 +52,7 @@ void main() {
       feedback: 'Correct.',
       solutionExplanation: 'Lea was near the case after closing.',
       streak: 3,
+      alreadySolved: false,
     );
 
     await tester.pumpWidget(const MaterialApp(home: ResultView(result: result)));
@@ -65,11 +68,33 @@ void main() {
       feedback: 'Correct.',
       solutionExplanation: 'Lea was near the case after closing.',
       streak: 2,
+      alreadySolved: false,
     );
 
     await tester.pumpWidget(const MaterialApp(home: ResultView(result: result)));
     await tester.pump(const Duration(milliseconds: 900));
 
+    expect(find.textContaining('streak!'), findsNothing);
+  });
+
+  testWidgets('an already-solved resubmission shows no milestone message even at a streak multiple of 3', (
+    tester,
+  ) async {
+    const result = CaseResult(
+      correct: true,
+      score: 0,
+      feedback: 'Correct.',
+      solutionExplanation: 'Lea was near the case after closing.',
+      streak: 3,
+      alreadySolved: true,
+    );
+
+    await tester.pumpWidget(const MaterialApp(home: ResultView(result: result)));
+    await tester.pump(const Duration(milliseconds: 900));
+
+    // Score/streak still display honestly (they're real, current values),
+    // but no celebratory milestone banner — nothing new was actually
+    // earned by resubmitting.
     expect(find.textContaining('streak!'), findsNothing);
   });
 }

@@ -27,7 +27,10 @@ class _ResultViewState extends State<ResultView> with SingleTickerProviderStateM
   late final Animation<double> _pulseScale;
 
   bool get _isMilestone =>
-      widget.result.correct && widget.result.streak > 0 && widget.result.streak % 3 == 0;
+      !widget.result.alreadySolved &&
+      widget.result.correct &&
+      widget.result.streak > 0 &&
+      widget.result.streak % 3 == 0;
 
   @override
   void initState() {
@@ -43,7 +46,7 @@ class _ResultViewState extends State<ResultView> with SingleTickerProviderStateM
     ).animate(CurvedAnimation(parent: _pulseController, curve: Curves.elasticOut));
 
     _pulseController.forward();
-    if (widget.result.correct) {
+    if (widget.result.correct && !widget.result.alreadySolved) {
       _confettiController.play();
     }
   }

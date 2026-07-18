@@ -85,6 +85,7 @@ def submit_solution(
         feedback=result.feedback,
         solution_explanation=result.solution_explanation,
         streak=result.streak,
+        already_solved=result.already_solved,
     )
 
 

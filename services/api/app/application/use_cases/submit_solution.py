@@ -23,6 +23,7 @@ class SubmitSolutionResult:
     feedback: str
     solution_explanation: str
     streak: int
+    already_solved: bool
 
 
 def _next_streak(current_streak: int, correct: bool) -> int:
@@ -59,17 +60,32 @@ class SubmitSolution:
 
         result = self._solution_policy.evaluate(case, submitted_suspect_id)
 
-        hints_used = self._hint_request_repository.count_for_case(case_id, player_id)
-        score = self._scoring_policy.calculate_score(correct=result.correct, hints_used=hints_used)
-        new_streak = _next_streak(player.streak, result.correct)
+        # Only the first attempt at a given case affects score/streak — an
+        # unlimited-resubmission player could otherwise farm score by
+        # retrying a case repeatedly until correct, or re-submit a correct
+        # answer over and over to keep resetting/extending the streak.
+        # Later submissions still get a real, honest correct/feedback/
+        # explanation response (this isn't about hiding the answer) — just
+        # score: 0 and an unchanged streak, with already_solved: true so
+        # the UI can react (e.g. skip the score/streak "juice").
+        already_solved = self._attempt_repository.exists_for(player_id, case_id.value)
 
-        updated_player = dataclasses.replace(
-            player,
-            streak=new_streak,
-            total_score=player.total_score + score,
-            last_played_at=datetime.now(timezone.utc),
-        )
-        self._player_repository.save(updated_player)
+        if already_solved:
+            hints_used = self._hint_request_repository.count_for_case(case_id, player_id)
+            score = 0
+            new_streak = player.streak
+        else:
+            hints_used = self._hint_request_repository.count_for_case(case_id, player_id)
+            score = self._scoring_policy.calculate_score(correct=result.correct, hints_used=hints_used)
+            new_streak = _next_streak(player.streak, result.correct)
+
+            updated_player = dataclasses.replace(
+                player,
+                streak=new_streak,
+                total_score=player.total_score + score,
+                last_played_at=datetime.now(timezone.utc),
+            )
+            self._player_repository.save(updated_player)
 
         self._attempt_repository.record(
             Attempt(
@@ -92,4 +108,5 @@ class SubmitSolution:
             feedback=feedback,
             solution_explanation=result.explanation,
             streak=new_streak,
+            already_solved=already_solved,
         )

@@ -57,6 +57,7 @@ class CaseRepositoryImpl implements CaseRepository {
       feedback: dto.feedback,
       solutionExplanation: dto.solutionExplanation,
       streak: dto.streak,
+      alreadySolved: dto.alreadySolved,
     );
   }
 

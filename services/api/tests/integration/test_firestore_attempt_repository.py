@@ -30,3 +30,31 @@ def test_record_persists_full_attempt(firestore_client):
     assert raw["correct"] is True
     assert raw["score"] == 100
     assert raw["hintsUsed"] == 0
+
+
+@requires_firestore_emulator
+def test_exists_for_is_false_before_any_attempt(firestore_client):
+    repo = FirestoreAttemptRepository(client=firestore_client)
+    assert repo.exists_for("player-1", "case_museum_001") is False
+
+
+@requires_firestore_emulator
+def test_exists_for_is_true_after_recording_real_against_the_emulator(firestore_client):
+    repo = FirestoreAttemptRepository(client=firestore_client)
+    repo.record(
+        Attempt(
+            attempt_id="attempt-2",
+            player_id="player-1",
+            case_id="case_museum_001",
+            selected_suspect_id="suspect_3",
+            correct=True,
+            score=100,
+            hints_used=0,
+            created_at=datetime.now(timezone.utc),
+        )
+    )
+
+    assert repo.exists_for("player-1", "case_museum_001") is True
+    # Scoped to the specific player+case pair, not a global flag.
+    assert repo.exists_for("player-2", "case_museum_001") is False
+    assert repo.exists_for("player-1", "case_other") is False

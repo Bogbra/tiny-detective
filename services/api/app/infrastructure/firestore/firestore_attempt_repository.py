@@ -1,6 +1,7 @@
 import uuid
 
 from google.cloud import firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 from app.domain.entities.attempt import Attempt
 from app.infrastructure.firestore.attempt_mapper import attempt_to_document
@@ -18,3 +19,17 @@ class FirestoreAttemptRepository:
         self._client.collection(CASE_ATTEMPTS_COLLECTION).document(doc_id).set(
             attempt_to_document(attempt)
         )
+
+    def exists_for(self, player_id: str, case_id: str) -> bool:
+        # Two plain equality (==) filters on different fields — Firestore's
+        # automatic single-field indexes cover this without a composite
+        # index; one would only be needed if this also had a range filter
+        # or an orderBy on a different field. No firestore.indexes.json
+        # entry needed.
+        query = (
+            self._client.collection(CASE_ATTEMPTS_COLLECTION)
+            .where(filter=FieldFilter("playerId", "==", player_id))
+            .where(filter=FieldFilter("caseId", "==", case_id))
+            .limit(1)
+        )
+        return next(query.stream(), None) is not None
