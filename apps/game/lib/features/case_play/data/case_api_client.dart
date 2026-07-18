@@ -57,7 +57,7 @@ class CaseApiClient {
 
   void _throwIfNotOk(http.Response response) {
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(response.statusCode, response.body);
+      throw ApiException.fromResponseBody(response.statusCode, response.body);
     }
   }
 }

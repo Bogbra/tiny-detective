@@ -27,7 +27,7 @@ class CaseGenerationApiClient {
 
     if (streamedResponse.statusCode < 200 || streamedResponse.statusCode >= 300) {
       final body = await streamedResponse.stream.bytesToString();
-      throw ApiException(streamedResponse.statusCode, body);
+      throw ApiException.fromResponseBody(streamedResponse.statusCode, body);
     }
 
     final lines = streamedResponse.stream
