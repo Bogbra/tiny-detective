@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -45,6 +46,17 @@ def _require_persistent_storage_if_configured() -> None:
             "Refusing to start with silent in-memory storage."
         )
 
+
+# Without this, app-level `logging.getLogger(__name__).info(...)` calls
+# (e.g. generate_case.py's per-request token/cost logging) are silently
+# dropped: the root logger has no handler and defaults to WARNING, so INFO
+# records never reach stdout — found by checking Cloud Run logs for output
+# that should have been there and finding nothing, not by inspection.
+# uvicorn configures its OWN loggers (uvicorn.error/uvicorn.access) but not
+# arbitrary application loggers. Cloud Run captures stdout/stderr
+# automatically, so a plain basicConfig is enough — no structured-logging
+# library needed for this project's current scale.
+logging.basicConfig(level=logging.INFO)
 
 _require_persistent_storage_if_configured()
 
