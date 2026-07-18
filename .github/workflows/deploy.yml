@@ -53,6 +53,31 @@ jobs:
       # left at the default, because a demo should actually scale to zero
       # when idle — cold starts don't matter here, a running instance with
       # no traffic does.
+      #
+      # --timeout=120s (Cloud Run's default is also 300s, but leaving it
+      # implicit meant nobody had actually reasoned about it against this
+      # service's real worst case): /cases/generate's retry loop makes up
+      # to 5 attempts, each up to 3 real OpenAI calls (render, logic judge,
+      # safety judge), each with its own 30s client-side timeout (see
+      # openai_client.py, task 6) — a genuine worst case of several
+      # minutes if every single call happened to hang at its max. 120s is
+      # generous versus the real observed latency (single-digit seconds
+      # per attempt in practice) while still bounding how long one stuck
+      # request can hold a slot open.
+      #
+      # --concurrency=40, not Cloud Run's default of 80: every route
+      # except POST /cases/generate is a plain `def` (sync) FastAPI route,
+      # which FastAPI runs via Starlette's run_in_threadpool — backed by
+      # anyio's default CapacityLimiter, which caps concurrent threads at
+      # 40 per process. Leaving --concurrency at 80 would let Cloud Run
+      # believe an instance has room for 80 concurrent requests while the
+      # 41st sync request onward actually queues invisibly on that thread
+      # pool inside the container — inflating tail latency without ever
+      # showing up as autoscaler-visible pressure, since Cloud Run's own
+      # concurrency counter never gets close to its configured limit.
+      # Aligning --concurrency with the real threadpool capacity makes
+      # Cloud Run's autoscaling decisions reflect what the container can
+      # actually do.
       - id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
@@ -65,6 +90,8 @@ jobs:
             --service-account=${{ vars.RUNTIME_SA_EMAIL }}
             --max-instances=3
             --min-instances=0
+            --timeout=120s
+            --concurrency=40
             --set-env-vars=GOOGLE_CLOUD_PROJECT=${{ vars.GCP_PROJECT_ID }},ALLOWED_ORIGINS=https://${{ vars.GCP_PROJECT_ID }}.web.app,REQUIRE_PERSISTENT_STORAGE=true
             --set-secrets=ADMIN_API_TOKEN=ADMIN_API_TOKEN:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest
 
