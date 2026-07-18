@@ -79,7 +79,7 @@ jobs:
       # Cloud Run's autoscaling decisions reflect what the container can
       # actually do.
       - id: deploy
-        uses: google-github-actions/deploy-cloudrun@v2
+        uses: google-github-actions/deploy-cloudrun@v3
         with:
           service: tiny-detective-api
           region: ${{ vars.GCP_REGION }}
