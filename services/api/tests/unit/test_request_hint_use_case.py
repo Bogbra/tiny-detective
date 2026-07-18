@@ -1,21 +1,29 @@
 import pytest
 
-from app.application.errors import CaseNotFoundError, HintLimitExceededError
+from app.application.errors import CaseNotFoundError, HintLimitExceededError, PlayerNotFoundError
 from app.application.ports import AssistantHint
 from app.application.use_cases.request_hint import FALLBACK_HINT_TEXT, RequestHint
+from app.domain.entities.player import Player
 from app.domain.value_objects.case_id import CaseId
 from app.infrastructure.repositories.in_memory_case_repository import InMemoryCaseRepository
 from app.infrastructure.repositories.in_memory_hint_request_repository import (
     InMemoryHintRequestRepository,
 )
+from app.infrastructure.repositories.in_memory_player_repository import InMemoryPlayerRepository
 
 from tests.fakes import FakeHintAssistant
 
 
-def _use_case(case, assistant):
+def _use_case(case, assistant, *, known_player_id="player-1"):
     case_repository = InMemoryCaseRepository(initial_cases=[case])
     hint_request_repository = InMemoryHintRequestRepository()
-    return RequestHint(case_repository, hint_request_repository, assistant), hint_request_repository
+    player_repository = InMemoryPlayerRepository()
+    if known_player_id is not None:
+        player_repository.save(Player(player_id=known_player_id))
+    return (
+        RequestHint(case_repository, hint_request_repository, assistant, player_repository),
+        hint_request_repository,
+    )
 
 
 def test_uses_ai_hint_when_grounded_and_safe(make_case):
@@ -130,7 +138,37 @@ def test_unknown_case_raises(make_case):
     assistant = FakeHintAssistant(None)
     case_repository = InMemoryCaseRepository()
     hint_request_repository = InMemoryHintRequestRepository()
-    use_case = RequestHint(case_repository, hint_request_repository, assistant)
+    player_repository = InMemoryPlayerRepository()
+    player_repository.save(Player(player_id="player-1"))
+    use_case = RequestHint(case_repository, hint_request_repository, assistant, player_repository)
 
     with pytest.raises(CaseNotFoundError):
         use_case.execute(CaseId("does-not-exist"), "player-1")
+
+
+def test_unknown_player_raises(make_case):
+    """Closes the hint-limit bypass: an unregistered player_id (e.g. a
+    freshly-minted UUID that was never POSTed to /players) must not get its
+    own fresh hint budget — see task 2 of the security/ops audit."""
+    case = make_case()
+    assistant = FakeHintAssistant(None)
+    use_case, _ = _use_case(case, assistant, known_player_id=None)
+
+    with pytest.raises(PlayerNotFoundError):
+        use_case.execute(case.case_id, "never-registered-player")
+
+
+def test_unknown_player_is_checked_before_generating_a_hint(make_case):
+    """No AI call, no hint-count increment, for an unregistered player —
+    the check must happen before any real work, not after."""
+    case = make_case()
+    assistant = FakeHintAssistant(
+        AssistantHint(clue_id=case.clues[0].clue_id, commentary="Look closely here.")
+    )
+    use_case, hint_request_repository = _use_case(case, assistant, known_player_id=None)
+
+    with pytest.raises(PlayerNotFoundError):
+        use_case.execute(case.case_id, "never-registered-player")
+
+    assert assistant.calls == 0
+    assert hint_request_repository.count_for_case(case.case_id, "never-registered-player") == 0

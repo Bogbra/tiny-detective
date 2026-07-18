@@ -24,6 +24,17 @@ def test_hint_response_shape(client):
     assert body["text"]
 
 
+def test_hint_for_unregistered_player_returns_404(client):
+    """Closes the hint-limit bypass: a random UUID that was never POSTed to
+    /players must not get its own fresh hint budget just by being used as
+    playerId — see task 2 of the security/ops audit."""
+    response = client.post(
+        "/cases/case_museum_001/hint", json={"playerId": "never-registered-player-id"}
+    )
+
+    assert response.status_code == 404
+
+
 def test_hint_for_unknown_case_returns_404(client):
     player = client.post("/players").json()
 

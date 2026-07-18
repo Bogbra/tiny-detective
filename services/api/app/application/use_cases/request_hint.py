@@ -2,8 +2,8 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from app.application.errors import CaseNotFoundError, HintLimitExceededError
-from app.application.ports import CaseRepository, HintAssistant, HintRequestRepository
+from app.application.errors import CaseNotFoundError, HintLimitExceededError, PlayerNotFoundError
+from app.application.ports import CaseRepository, HintAssistant, HintRequestRepository, PlayerRepository
 from app.domain.entities.detective_case import DetectiveCase
 from app.domain.entities.hint_request import HintRequest
 from app.domain.policies.hint_guardrail_policy import HintGuardrailPolicy
@@ -36,12 +36,14 @@ class RequestHint:
         case_repository: CaseRepository,
         hint_request_repository: HintRequestRepository,
         hint_assistant: HintAssistant,
+        player_repository: PlayerRepository,
         hint_policy: HintPolicy | None = None,
         guardrail_policy: HintGuardrailPolicy | None = None,
     ) -> None:
         self._case_repository = case_repository
         self._hint_request_repository = hint_request_repository
         self._hint_assistant = hint_assistant
+        self._player_repository = player_repository
         self._hint_policy = hint_policy or HintPolicy()
         self._guardrail_policy = guardrail_policy or HintGuardrailPolicy()
 
@@ -49,6 +51,14 @@ class RequestHint:
         case = self._case_repository.get(case_id)
         if case is None:
             raise CaseNotFoundError(f"case '{case_id.value}' not found")
+
+        # Without this check, any caller-supplied player_id (a fresh random
+        # UUID they never registered via POST /players) gets its own brand
+        # new hint-count budget — the per-case hint limit is trivially
+        # bypassable by minting a new id per request. See task 2 of the
+        # security/ops audit.
+        if self._player_repository.get(player_id) is None:
+            raise PlayerNotFoundError(f"player '{player_id}' not found")
 
         hints_used = self._hint_request_repository.count_for_case(case_id, player_id)
         if not self._hint_policy.can_request_hint(hints_used):

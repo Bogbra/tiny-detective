@@ -53,12 +53,15 @@ def test_request_hint_persists_a_hint_request(firestore_client, make_case):
     case_repository = FirestoreCaseRepository(client=firestore_client)
     case_repository.save(case)
 
+    player_repository = FirestorePlayerRepository(client=firestore_client)
+    player_repository.save(Player(player_id="player-1"))
+
     hint_request_repository = FirestoreHintRequestRepository(client=firestore_client)
     # Fake assistant — this test is about persistence wiring, not AI; the
     # fallback path is exercised deliberately so no OPENAI_API_KEY is needed.
     assistant = FakeHintAssistant(None)
 
-    use_case = RequestHint(case_repository, hint_request_repository, assistant)
+    use_case = RequestHint(case_repository, hint_request_repository, assistant, player_repository)
     result = use_case.execute(case.case_id, "player-1")
 
     assert result.hints_used == 1
