@@ -49,6 +49,7 @@ def case_to_document(case: DetectiveCase) -> dict:
         "status": case.status.value,
         "createdAt": case.created_at,
         "updatedAt": case.updated_at,
+        "source": case.source,
     }
 
 
@@ -93,4 +94,5 @@ def document_to_case(case_id_value: str, data: dict) -> DetectiveCase:
         status=PublishStatus(data["status"]),
         created_at=data.get("createdAt"),
         updated_at=data.get("updatedAt"),
+        source=data.get("source", "curated"),
     )

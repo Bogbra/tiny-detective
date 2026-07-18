@@ -41,11 +41,10 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
 
       - name: Build and push image
-        working-directory: services/api
         run: |
           gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
           IMAGE="${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/tiny-detective-api/api:${{ github.sha }}"
-          docker build -t "$IMAGE" .
+          docker build -f services/api/Dockerfile -t "$IMAGE" .
           docker push "$IMAGE"
           echo "image=$IMAGE" >> "$GITHUB_ENV"
 

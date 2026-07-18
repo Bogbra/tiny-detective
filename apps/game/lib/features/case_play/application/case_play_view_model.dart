@@ -50,6 +50,21 @@ class CasePlayViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Swaps in a freshly live-generated case (see the case_generation
+  /// feature) without a network round-trip — the case already arrived
+  /// fully formed in the SSE stream's final event. Resets exactly the same
+  /// per-case state start() resets, so playing a generated case looks and
+  /// behaves identically to playing the daily case.
+  void loadGeneratedCase(DetectiveCase generatedCase) {
+    detectiveCase = generatedCase;
+    selectedSuspectId = null;
+    hint = null;
+    result = null;
+    errorMessage = null;
+    status = CasePlayStatus.playing;
+    notifyListeners();
+  }
+
   Future<void> requestHint() async {
     final currentCase = detectiveCase;
     final id = playerId;

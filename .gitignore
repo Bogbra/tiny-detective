@@ -15,6 +15,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
+*.egg-info/
 
 # AI content tool runtime output (generated, not source content)
 tools/ai-content/drafts/

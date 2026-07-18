@@ -19,4 +19,5 @@ def to_case_response(public_case: PublicDetectiveCase) -> CaseResponse:
         ],
         clues=[ClueResponse(clue_id=c.clue_id, text=c.text) for c in public_case.clues],
         difficulty=public_case.difficulty,
+        source=public_case.source,
     )

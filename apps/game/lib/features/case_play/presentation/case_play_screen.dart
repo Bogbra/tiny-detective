@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../case_generation/application/case_generation_repository.dart';
+import '../../case_generation/application/case_generation_view_model.dart';
+import '../../case_generation/presentation/generate_case_button.dart';
 import '../../clues/presentation/clue_board.dart';
 import '../../hints/presentation/hint_panel.dart';
 import '../../results/presentation/result_view.dart';
@@ -8,19 +11,43 @@ import '../application/case_play_view_model.dart';
 import 'solution_submit_button.dart';
 
 class CasePlayScreen extends StatefulWidget {
-  const CasePlayScreen({super.key, required this.viewModel});
+  const CasePlayScreen({super.key, required this.viewModel, required this.caseGenerationRepository});
 
   final CasePlayViewModel viewModel;
+  final CaseGenerationRepository caseGenerationRepository;
 
   @override
   State<CasePlayScreen> createState() => _CasePlayScreenState();
 }
 
 class _CasePlayScreenState extends State<CasePlayScreen> {
+  late final CaseGenerationViewModel _generationViewModel;
+
   @override
   void initState() {
     super.initState();
     widget.viewModel.start();
+    _generationViewModel = CaseGenerationViewModel(widget.caseGenerationRepository);
+    _generationViewModel.addListener(_onGenerationChanged);
+  }
+
+  @override
+  void dispose() {
+    _generationViewModel.removeListener(_onGenerationChanged);
+    _generationViewModel.dispose();
+    super.dispose();
+  }
+
+  /// A ChangeNotifier-listener side effect, deliberately not inline in
+  /// build() — swapping in the generated case and resetting the generation
+  /// view model are state mutations, not something a build() method should
+  /// trigger as a side effect of being called.
+  void _onGenerationChanged() {
+    final generated = _generationViewModel.generatedCase;
+    if (_generationViewModel.state == CaseGenerationState.success && generated != null) {
+      widget.viewModel.loadGeneratedCase(generated);
+      _generationViewModel.reset();
+    }
   }
 
   @override
@@ -29,7 +56,7 @@ class _CasePlayScreenState extends State<CasePlayScreen> {
       appBar: AppBar(title: const Text('Tiny Detective')),
       body: SafeArea(
         child: ListenableBuilder(
-          listenable: widget.viewModel,
+          listenable: Listenable.merge([widget.viewModel, _generationViewModel]),
           builder: (context, _) => _buildBody(context, widget.viewModel),
         ),
       ),
@@ -46,7 +73,16 @@ class _CasePlayScreenState extends State<CasePlayScreen> {
           onRetry: viewModel.start,
         );
       case CasePlayStatus.solved:
-        return ResultView(result: viewModel.result!);
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              ResultView(result: viewModel.result!),
+              const SizedBox(height: 24),
+              GenerateCaseButton(viewModel: _generationViewModel),
+            ],
+          ),
+        );
       case CasePlayStatus.playing:
         return _PlayingView(viewModel: viewModel);
     }

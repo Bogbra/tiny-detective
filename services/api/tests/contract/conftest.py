@@ -5,13 +5,16 @@ from app.api import dependencies
 from app.api.rate_limiting import limiter
 from app.infrastructure.repositories.in_memory_attempt_repository import InMemoryAttemptRepository
 from app.infrastructure.repositories.in_memory_case_repository import InMemoryCaseRepository
+from app.infrastructure.repositories.in_memory_generation_quota_repository import (
+    InMemoryDailyGenerationQuotaRepository,
+)
 from app.infrastructure.repositories.in_memory_hint_request_repository import (
     InMemoryHintRequestRepository,
 )
 from app.infrastructure.repositories.in_memory_player_repository import InMemoryPlayerRepository
 from app.infrastructure.seed_data import seed_cases
 from app.main import app
-from tests.fakes import FakeHintAssistant
+from tests.fakes import AttemptScript, FakeCaseGenerationAdapter, FakeHintAssistant
 
 
 @pytest.fixture(autouse=True)
@@ -46,6 +49,11 @@ def _isolated_repositories():
     hint_request_repository = InMemoryHintRequestRepository()
     attempt_repository = InMemoryAttemptRepository()
     hint_assistant = FakeHintAssistant(None)
+    # Default: succeeds on the first attempt — never a real OpenAI call.
+    # Tests that need a specific script (rejections, exhaustion, etc.)
+    # override dependencies.get_case_generation_adapter again themselves.
+    case_generation_adapter = FakeCaseGenerationAdapter([AttemptScript()])
+    generation_quota_repository = InMemoryDailyGenerationQuotaRepository()
 
     app.dependency_overrides[dependencies.get_case_repository] = lambda: case_repository
     app.dependency_overrides[dependencies.get_player_repository] = lambda: player_repository
@@ -54,6 +62,12 @@ def _isolated_repositories():
     )
     app.dependency_overrides[dependencies.get_attempt_repository] = lambda: attempt_repository
     app.dependency_overrides[dependencies.get_hint_assistant] = lambda: hint_assistant
+    app.dependency_overrides[dependencies.get_case_generation_adapter] = (
+        lambda: case_generation_adapter
+    )
+    app.dependency_overrides[dependencies.get_generation_quota_repository] = (
+        lambda: generation_quota_repository
+    )
 
     yield
 

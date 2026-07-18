@@ -28,21 +28,32 @@ from dotenv import load_dotenv
 from fastapi import Header, HTTPException, status
 
 from app.application.ports import (
+    DEFAULT_DAILY_ATTEMPT_CAP,
+    DEFAULT_DAILY_SUCCESS_CAP,
     AttemptRepository,
+    CaseGenerationAdapter,
     CaseRepository,
+    DailyGenerationQuotaRepository,
     HintRequestRepository,
     PlayerRepository,
 )
 from app.infrastructure.ai.ai_hint_assistant import OpenAIHintAssistant
+from app.infrastructure.ai.live_case_generator import LiveCaseGenerator
 from app.infrastructure.firestore.firestore_attempt_repository import FirestoreAttemptRepository
 from app.infrastructure.firestore.firestore_case_repository import FirestoreCaseRepository
 from app.infrastructure.firestore.firestore_client import is_firestore_configured
+from app.infrastructure.firestore.firestore_generation_quota_repository import (
+    FirestoreDailyGenerationQuotaRepository,
+)
 from app.infrastructure.firestore.firestore_hint_request_repository import (
     FirestoreHintRequestRepository,
 )
 from app.infrastructure.firestore.firestore_player_repository import FirestorePlayerRepository
 from app.infrastructure.repositories.in_memory_attempt_repository import InMemoryAttemptRepository
 from app.infrastructure.repositories.in_memory_case_repository import InMemoryCaseRepository
+from app.infrastructure.repositories.in_memory_generation_quota_repository import (
+    InMemoryDailyGenerationQuotaRepository,
+)
 from app.infrastructure.repositories.in_memory_hint_request_repository import (
     InMemoryHintRequestRepository,
 )
@@ -99,6 +110,23 @@ def get_hint_assistant() -> OpenAIHintAssistant:
     # longer eager either — the key is read lazily, per request, inside
     # generate_hint(). See ai_hint_assistant.py.
     return OpenAIHintAssistant()
+
+
+@lru_cache
+def get_case_generation_adapter() -> CaseGenerationAdapter:
+    return LiveCaseGenerator()
+
+
+@lru_cache
+def get_generation_quota_repository() -> DailyGenerationQuotaRepository:
+    # Env-var-overridable specifically so the live-verification step (see
+    # ADR-0007) can temporarily redeploy with a tiny cap to actually
+    # observe a real 429, then restore the real default.
+    success_cap = int(os.environ.get("CASE_GENERATION_DAILY_SUCCESS_CAP", DEFAULT_DAILY_SUCCESS_CAP))
+    attempt_cap = int(os.environ.get("CASE_GENERATION_DAILY_ATTEMPT_CAP", DEFAULT_DAILY_ATTEMPT_CAP))
+    if is_firestore_configured():
+        return FirestoreDailyGenerationQuotaRepository(success_cap=success_cap, attempt_cap=attempt_cap)
+    return InMemoryDailyGenerationQuotaRepository(success_cap=success_cap, attempt_cap=attempt_cap)
 
 
 def require_admin(x_admin_token: str = Header(default="")) -> None:

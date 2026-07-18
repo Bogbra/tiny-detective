@@ -57,7 +57,14 @@ requires_firestore_emulator = pytest.mark.skipif(
     ),
 )
 
-_TOUCHED_COLLECTIONS = ["cases", "daily_cases", "players", "hint_requests", "case_attempts"]
+_TOUCHED_COLLECTIONS = [
+    "cases",
+    "daily_cases",
+    "players",
+    "hint_requests",
+    "case_attempts",
+    "rate_limits",
+]
 
 
 @pytest.fixture

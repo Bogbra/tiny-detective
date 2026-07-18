@@ -1,9 +1,8 @@
 import json
 from pathlib import Path
-from typing import TypedDict
 
 from .evaluators import EvaluationResult
-from .models import CaseCandidate
+from .models import CaseCandidate, TokenUsage
 from .openai_client import get_openai_client
 from .prompts import load_prompt
 
@@ -15,12 +14,6 @@ DEFAULT_MODEL = "gpt-4o-mini"
 # (run each fixture multiple times and check for disagreement) rather than
 # assuming temperature=0 alone guarantees determinism.
 DEFAULT_TEMPERATURE = 0.0
-
-
-class TokenUsage(TypedDict):
-    prompt_tokens: int
-    completion_tokens: int
-    total_tokens: int
 
 
 def _candidate_to_json(candidate: CaseCandidate) -> dict:

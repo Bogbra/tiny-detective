@@ -14,6 +14,13 @@ void main() {
     );
 
     await tester.pumpWidget(const MaterialApp(home: ResultView(result: result)));
+    // The score/streak line counts up over 800ms (see _AnimatedScoreLine) —
+    // let it finish before asserting the final numbers. Deliberately not
+    // pumpAndSettle(): ConfettiWidget's particle simulation keeps scheduling
+    // frames for its own duration and never fully "settles" within
+    // pumpAndSettle's timeout, a known characteristic of physics-based
+    // confetti animations, not a bug in this widget.
+    await tester.pump(const Duration(milliseconds: 900));
 
     expect(find.text('Case solved!'), findsOneWidget);
     expect(find.text('Correct.'), findsOneWidget);
@@ -34,5 +41,35 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: ResultView(result: result)));
 
     expect(find.text('Not quite.'), findsOneWidget);
+  });
+
+  testWidgets('a streak multiple of 3 shows the milestone message', (tester) async {
+    const result = CaseResult(
+      correct: true,
+      score: 100,
+      feedback: 'Correct.',
+      solutionExplanation: 'Lea was near the case after closing.',
+      streak: 3,
+    );
+
+    await tester.pumpWidget(const MaterialApp(home: ResultView(result: result)));
+    await tester.pump(const Duration(milliseconds: 900));
+
+    expect(find.textContaining('streak!'), findsOneWidget);
+  });
+
+  testWidgets('a non-milestone streak shows no milestone message', (tester) async {
+    const result = CaseResult(
+      correct: true,
+      score: 100,
+      feedback: 'Correct.',
+      solutionExplanation: 'Lea was near the case after closing.',
+      streak: 2,
+    );
+
+    await tester.pumpWidget(const MaterialApp(home: ResultView(result: result)));
+    await tester.pump(const Duration(milliseconds: 900));
+
+    expect(find.textContaining('streak!'), findsNothing);
   });
 }

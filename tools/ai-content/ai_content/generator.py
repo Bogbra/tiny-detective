@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from .models import TokenUsage
 from .openai_client import get_openai_client
 from .prompts import load_prompt
 
@@ -21,6 +22,13 @@ class OpenAICaseGenerator:
     def __init__(self, model: str = DEFAULT_MODEL) -> None:
         self.model = model
         self.prompt_version = Path(self.PROMPT_FILE).stem
+        # Populated after each generate() call — previously only the two
+        # evaluators tracked this; the live case-generation feature
+        # (services/api) needs real, measured per-request cost across the
+        # WHOLE pipeline including the generator call, not just the judges.
+        # See evaluate_cases.py for the established read-.last_usage-after
+        # pattern this mirrors.
+        self.last_usage: TokenUsage | None = None
 
     def generate(self, *, difficulty_hint: str | None = None) -> dict:
         client = get_openai_client()
@@ -35,6 +43,13 @@ class OpenAICaseGenerator:
                 {"role": "user", "content": user_prompt},
             ],
         )
+        self.last_usage = None
+        if response.usage is not None:
+            self.last_usage = {
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens,
+            }
         content = response.choices[0].message.content
         try:
             return json.loads(content)

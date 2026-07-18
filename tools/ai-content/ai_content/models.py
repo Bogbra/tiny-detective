@@ -1,4 +1,11 @@
 from dataclasses import dataclass
+from typing import TypedDict
+
+
+class TokenUsage(TypedDict):
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
 
 
 @dataclass(frozen=True, slots=True)

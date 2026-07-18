@@ -920,6 +920,24 @@ wheels = [
 ]
 
 [[package]]
+name = "tiny-detective-ai-content"
+version = "0.1.0"
+source = { editable = "../../tools/ai-content" }
+dependencies = [
+    { name = "openai" },
+    { name = "python-dotenv" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "openai", specifier = ">=2.45.0" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.1.1" }]
+
+[[package]]
 name = "tiny-detective-api"
 version = "0.1.0"
 source = { virtual = "." }
@@ -929,6 +947,7 @@ dependencies = [
     { name = "openai" },
     { name = "python-dotenv" },
     { name = "slowapi" },
+    { name = "tiny-detective-ai-content" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -945,6 +964,7 @@ requires-dist = [
     { name = "openai", specifier = ">=2.46.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "slowapi", specifier = ">=0.1.10" },
+    { name = "tiny-detective-ai-content", editable = "../../tools/ai-content" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.51.0" },
 ]
 

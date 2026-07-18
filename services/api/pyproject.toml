@@ -9,6 +9,7 @@ dependencies = [
     "openai>=2.46.0",
     "python-dotenv>=1.2.2",
     "slowapi>=0.1.10",
+    "tiny-detective-ai-content",
     "uvicorn[standard]>=0.51.0",
 ]
 
@@ -20,3 +21,6 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+
+[tool.uv.sources]
+tiny-detective-ai-content = { path = "../../tools/ai-content", editable = true }

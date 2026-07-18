@@ -27,6 +27,7 @@ def test_document_uses_camel_case_field_names(make_case):
         "status",
         "createdAt",
         "updatedAt",
+        "source",
     }
     assert set(document["suspects"][0].keys()) == {
         "suspectId",
@@ -49,6 +50,37 @@ def test_document_uses_camel_case_field_names(make_case):
         "explanation",
         "requiredClueIds",
     }
+
+
+def test_source_defaults_to_curated(make_case):
+    case = make_case()
+
+    assert case.source == "curated"
+    document = case_to_document(case)
+    assert document["source"] == "curated"
+
+
+def test_live_generated_source_round_trips(make_case):
+    case = make_case(source="live_generated")
+
+    document = case_to_document(case)
+    restored = document_to_case(case.case_id.value, document)
+
+    assert document["source"] == "live_generated"
+    assert restored.source == "live_generated"
+
+
+def test_missing_source_field_defaults_to_curated(make_case):
+    """Backward compatibility: the two cases already in production Firestore
+    were written before this field existed — document_to_case must not
+    crash on documents that predate it."""
+    case = make_case()
+    document = case_to_document(case)
+    del document["source"]
+
+    restored = document_to_case(case.case_id.value, document)
+
+    assert restored.source == "curated"
 
 
 def test_document_includes_private_fields(make_case):

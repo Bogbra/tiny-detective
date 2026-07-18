@@ -15,3 +15,15 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+# evals/ and prompts/ are runtime data directories, not Python packages —
+# without this, setuptools' flat-layout auto-discovery treats every
+# top-level directory as a package candidate and refuses to build at all.
+# Needed now that services/api imports this as an editable path dependency
+# (see ADR-0007) rather than only ever running this project standalone.
+include = ["ai_content*"]

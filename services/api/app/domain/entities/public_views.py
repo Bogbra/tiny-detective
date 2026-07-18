@@ -31,3 +31,4 @@ class PublicDetectiveCase:
     suspects: tuple[PublicSuspect, ...]
     clues: tuple[PublicClue, ...]
     difficulty: str
+    source: str = "curated"

@@ -1,0 +1,24 @@
+# The backend image's build context is the repo root (see
+# services/api/Dockerfile) so it can reach tools/ai-content as a path
+# dependency — everything below stays out of the build context/image that
+# doesn't need to be there.
+
+.git/
+apps/game/build/
+apps/game/.dart_tool/
+services/api/.venv/
+tools/ai-content/.venv/
+tools/ai-content/drafts/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Never bake secrets into an image layer.
+.env
+.env.*
+!.env.example
+
+docs/
+CLAUDE.md
+.DS_Store

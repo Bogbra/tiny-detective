@@ -5,11 +5,17 @@ import 'package:game/features/case_play/presentation/case_play_screen.dart';
 import 'package:game/features/hints/domain/hint_state.dart';
 import 'package:game/features/results/domain/case_result.dart';
 
+import '../../case_generation/fake_case_generation_repository.dart';
 import 'fake_case_repository.dart';
 import 'sample_case.dart';
 
 Widget _wrap(FakeCaseRepository repository) {
-  return MaterialApp(home: CasePlayScreen(viewModel: CasePlayViewModel(repository)));
+  return MaterialApp(
+    home: CasePlayScreen(
+      viewModel: CasePlayViewModel(repository),
+      caseGenerationRepository: FakeCaseGenerationRepository(),
+    ),
+  );
 }
 
 void main() {
@@ -94,7 +100,11 @@ void main() {
 
     await tester.ensureVisible(find.text('Submit accusation'));
     await tester.tap(find.text('Submit accusation'));
-    await tester.pumpAndSettle();
+    // Not pumpAndSettle(): the result screen's ConfettiWidget keeps
+    // scheduling frames for its own animation duration and never fully
+    // "settles" within pumpAndSettle's timeout — see result_view_test.dart.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 900));
 
     expect(find.text('Case solved!'), findsOneWidget);
     expect(find.textContaining('Score: 100'), findsOneWidget);

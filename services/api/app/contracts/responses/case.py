@@ -21,3 +21,4 @@ class CaseResponse(ApiModel):
     suspects: list[SuspectResponse]
     clues: list[ClueResponse]
     difficulty: str
+    source: str

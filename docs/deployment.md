@@ -28,7 +28,7 @@ GitHub Actions (CI)  --workflow_run(success)-->  GitHub Actions (Deploy)
 - `backend-checks` — full `uv run pytest` (`services/api`).
 - `contract-checks` — `uv run pytest tests/contract` only. A deliberately redundant subset of `backend-checks`, kept separate so a broken public API contract shows up in the PR checks list by name, not buried in a generic "backend-checks failed." See ADR-0006.
 - `ai-tool-checks` — `uv run pytest` (`tools/ai-content`).
-- `docker-build` — `docker build services/api`, build-only, no push. Proves the image builds; the real push happens in `deploy.yml`.
+- `docker-build` — `docker build -f services/api/Dockerfile .` (build context is the repo root, not `services/api`, since the live case-generation feature makes `services/api` depend on `tools/ai-content` as a path dependency — see ADR-0007), build-only, no push. Proves the image builds; the real push happens in `deploy.yml`.
 
 `.github/workflows/deploy.yml` — triggered by CI's `workflow_run` completing successfully on `main` (plus `workflow_dispatch` for manual redeploys and for bootstrapping the very first run, since `workflow_run` only starts firing once the workflow file already exists on the default branch). One workflow, two jobs, `deploy-web` declaring `needs: deploy-api` — a simplification from the originally-planned three separate `workflow_run`-chained files; see ADR-0006 for why.
 
@@ -44,6 +44,10 @@ The `/hint` endpoint calls OpenAI on every request and has no authentication —
 3. A €10/month GCP budget alert (50/90/100% thresholds) on the billing account.
 
 Free tier covers normal demo traffic completely; these exist for the outlier, not the baseline. Full reasoning in ADR-0006.
+
+## Live Case Generation
+
+`POST /cases/generate` runs the real AI pipeline (generator + logic judge + safety judge, reused directly from `tools/ai-content`) live, on a player's click, and streams real progress via SSE. Bounded by two independent, atomic, Firestore-backed daily counters (a 50/day success cap and a 300/day attempt cap that also counts judge-rejected attempts — cost isn't bounded by successes alone) plus a 3/minute per-IP limit. Measured real cost: ~$0.0006 per full attempt (gpt-4o-mini), worst case ~$0.18/day at the attempt cap — well inside the existing €10 budget alert. Every result is stored with `source="live_generated"`, distinguishing it from curated content; the actual daily case is never touched by this feature. Full reasoning, including the empirical retry-count tuning and a real concurrency bug found by testing the atomic counter under load: [ADR-0007](architecture-decisions/ADR-0007-live-case-generation.md).
 
 ## Startup Guard: Fail Fast on Misconfigured Persistence
 
