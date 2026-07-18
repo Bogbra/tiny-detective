@@ -87,6 +87,8 @@ uv run uvicorn app.main:app --reload   # now Firestore-backed; seeds the two dem
 uv run pytest                          # unaffected either way — see below
 ```
 
+Demo-case seeding (`app/api/dependencies.py`'s `_should_seed_demo_cases`) is gated specifically on `FIRESTORE_EMULATOR_HOST` being set, not just "Firestore is configured" — in production, `GOOGLE_CLOUD_PROJECT` is set but `FIRESTORE_EMULATOR_HOST` is not (see [ADR-0006](docs/architecture-decisions/ADR-0006-deployment-topology.md)), so a freshly-provisioned or accidentally-wiped production database is never silently auto-populated with demo content — it stays empty until an admin deliberately publishes real content.
+
 `uv run pytest` **always** uses in-memory repositories and never touches Firestore, real or emulated, regardless of `.env` — dependency wiring detects it's running under pytest and forces the in-memory fallback. Real-Firestore tests live in `tests/integration/` and construct their own repository instances directly with an explicit client, skipping the whole module if the emulator isn't reachable.
 
 ### AI Content Tools (`tools/ai-content`)

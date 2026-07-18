@@ -68,16 +68,36 @@ load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 ADMIN_TOKEN_ENV_VAR = "ADMIN_API_TOKEN"
 
 
+def _should_seed_demo_cases() -> bool:
+    """Gated on FIRESTORE_EMULATOR_HOST specifically, not just "Firestore is
+    configured" — in production, GOOGLE_CLOUD_PROJECT is set but
+    FIRESTORE_EMULATOR_HOST is not (see ADR-0006), so this is only ever
+    true against the local emulator. Without this gate, a freshly
+    provisioned or accidentally-wiped production database would get
+    silently auto-populated with demo content on the next cold start,
+    rather than staying empty until an admin deliberately publishes real
+    content — see task 8 of the security/ops audit. Split out as its own
+    function (rather than inlined in get_case_repository) specifically so
+    it's unit-testable: get_case_repository's Firestore branch is
+    unreachable under pytest by design (is_firestore_configured() always
+    returns False there — see firestore_client.py), so this decision
+    needs to be checkable independently of that guard.
+    """
+    return bool(os.environ.get("FIRESTORE_EMULATOR_HOST"))
+
+
 @lru_cache
 def get_case_repository() -> CaseRepository:
     if not is_firestore_configured():
         return InMemoryCaseRepository(initial_cases=seed_cases())
 
     repository = FirestoreCaseRepository()
-    if not repository.list_all():
-        # Empty Firestore (e.g. a freshly started emulator) — seed the same
-        # two demo cases the in-memory repository ships with, so local dev
-        # against the emulator has something to play immediately.
+    # The emulator-only check also means production skips the list_all()
+    # read entirely on every cold start, not just the seeding.
+    if _should_seed_demo_cases() and not repository.list_all():
+        # Empty Firestore emulator — seed the same two demo cases the
+        # in-memory repository ships with, so local dev against the
+        # emulator has something to play immediately.
         for case in seed_cases():
             repository.save(case)
     return repository
