@@ -7,10 +7,16 @@ yet — they depend on the AI case generation pipeline built in Phase 5.
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.dependencies import get_case_repository, require_admin
-from app.application.errors import CaseNotFoundError, CaseNotInDraftError, CaseNotPublishableError
+from app.application.errors import (
+    CaseNotFoundError,
+    CaseNotInDraftError,
+    CaseNotPublishableError,
+    NoPublishableCaseError,
+)
 from app.application.ports import CaseRepository
 from app.application.use_cases.approve_case import ApproveCase
 from app.application.use_cases.publish_daily_case import PublishDailyCase
+from app.application.use_cases.publish_next_daily_case import PublishNextDailyCase
 from app.application.use_cases.reject_case import RejectCase
 from app.contracts.responses.admin import AdminActionResponse
 from app.domain.value_objects.case_id import CaseId
@@ -55,3 +61,18 @@ def publish_daily(
     except CaseNotPublishableError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return AdminActionResponse(case_id=case_id, status="live")
+
+
+@router.post("/publish-next-daily", response_model=AdminActionResponse)
+def publish_next_daily(case_repository: CaseRepository = Depends(get_case_repository)) -> AdminActionResponse:
+    """Auto-selecting sibling of publish-daily, meant to be called by a
+    scheduled job rather than a human — see ADR-0006's Cloud Scheduler
+    addendum. Takes no case_id: PublishNextDailyCase picks the case itself.
+    A 409 here means the case catalog is genuinely empty, the real signal
+    a scheduler-failure alert should fire on.
+    """
+    try:
+        case_id = PublishNextDailyCase(case_repository).execute()
+    except NoPublishableCaseError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return AdminActionResponse(case_id=case_id.value, status="live")

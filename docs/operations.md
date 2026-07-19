@@ -111,3 +111,55 @@ gcloud firestore fields ttls describe expireAt --collection-group=case_attempts 
 ```
 
 **Not independently verified against real GCP for this pass** — same honest scope as this project's other real-Firestore-behavior caveats (composite indexes, transaction atomicity under production concurrency, see `docs/scalability.md`): the application-side `expireAt` field is unit- and emulator-tested (the emulator does not enforce or simulate TTL deletion, so that half is inherently untestable without real GCP), but the `gcloud firestore fields ttls update` commands above were written from GCP's documented syntax, not run against a real project from this environment. Run them for real and confirm with `describe` before assuming deletion is actually active.
+
+## 7. Cloud Scheduler: Automated Daily Case Publish
+
+See [ADR-0006's Cloud Scheduler amendment](architecture-decisions/ADR-0006-deployment-topology.md#amendment-automated-daily-case-publishing-via-cloud-scheduler) for why this exists: the daily case's publish step was a manual admin call with no reminder and no fallback, and was genuinely forgotten twice in production. This replaces the human step with a scheduled call to the new `POST /admin/cases/publish-next-daily` endpoint, which picks the case itself.
+
+```bash
+# Fetch the real admin token into a shell variable — never echoed, never
+# committed to the job definition as a literal in this file. Unset
+# immediately after the job is created; Cloud Scheduler stores the header
+# value in the job resource from that point on (see the ADR's stated
+# trade-off: readable by anyone with roles/cloudscheduler.viewer, not just
+# Secret Manager's own IAM).
+ADMIN_TOKEN=$(gcloud secrets versions access latest --secret=ADMIN_API_TOKEN --project="$GCP_PROJECT_ID")
+
+gcloud scheduler jobs create http publish-daily-case \
+  --location="$GCP_REGION" \
+  --schedule="0 6 * * *" \
+  --time-zone="Etc/UTC" \
+  --uri="https://tiny-detective-api-n7fn34d2jq-ew.a.run.app/admin/cases/publish-next-daily" \
+  --http-method=POST \
+  --headers="X-Admin-Token=${ADMIN_TOKEN}" \
+  --attempt-deadline=30s \
+  --max-retry-attempts=3 \
+  --project="$GCP_PROJECT_ID"
+
+unset ADMIN_TOKEN
+```
+
+`0 6 * * *` (06:00 UTC) is an arbitrary but fixed daily time, chosen to run well before typical player traffic in the demo's expected timezone — not derived from any real usage data, since none exists yet. Verify the job actually works before trusting it silently:
+
+```bash
+gcloud scheduler jobs run publish-daily-case --location="$GCP_REGION" --project="$GCP_PROJECT_ID"
+gcloud scheduler jobs describe publish-daily-case --location="$GCP_REGION" --project="$GCP_PROJECT_ID" \
+  --format="value(status.code)"
+curl -s https://tiny-detective-api-n7fn34d2jq-ew.a.run.app/cases/daily | head -c 200
+```
+
+**Alerting on scheduler failure** — reuses the notification channel from §2 rather than creating a second one:
+
+```bash
+gcloud alpha monitoring policies create \
+  --display-name="tiny-detective-api daily case publish failing" \
+  --condition-display-name="Scheduler job non-success executions" \
+  --condition-filter='resource.type="cloud_scheduler_job" AND resource.labels.job_id="publish-daily-case" AND metric.type="cloudscheduler.googleapis.com/job/execution_count"' \
+  --condition-threshold-value=0 \
+  --condition-threshold-comparison=COMPARISON_GT \
+  --condition-threshold-duration=0s \
+  --condition-aggregations=alignmentPeriod=3600s,perSeriesAligner=ALIGN_COUNT,crossSeriesReducer=REDUCE_COUNT,groupByFields=metric.labels.response_code_class \
+  --notification-channels=CHANNEL_ID_FROM_STEP_2
+```
+
+Same honesty caveat as §6's TTL commands: this alert policy was written from Cloud Scheduler's documented Cloud Monitoring metric (`cloudscheduler.googleapis.com/job/execution_count`, labeled by `response_code_class`), not fired-and-confirmed against a real non-2xx execution in this pass — a genuinely empty catalog (the only way `publish-next-daily` itself returns `409`) is deliberately hard to reach outside a test double (see `test_publish_next_daily_returns_409_when_catalog_is_empty`), so triggering a real failing execution to validate the alert would mean actually emptying the production catalog. Confirm the policy fires by checking Monitoring → Alerting after the job's next scheduled run, and re-derive the exact filter from Console → Monitoring → Metrics Explorer → `cloud_scheduler_job` if the label names above don't match what's actually emitted.

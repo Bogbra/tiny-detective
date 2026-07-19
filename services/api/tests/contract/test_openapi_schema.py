@@ -17,5 +17,6 @@ def test_openapi_schema_is_valid(client):
         "/admin/cases/{case_id}/approve",
         "/admin/cases/{case_id}/reject",
         "/admin/cases/{case_id}/publish-daily",
+        "/admin/cases/publish-next-daily",
     }
     assert expected_paths.issubset(schema["paths"].keys())

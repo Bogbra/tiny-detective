@@ -22,3 +22,7 @@ class CaseNotPublishableError(ApplicationError):
     def __init__(self, violations: tuple[str, ...]) -> None:
         self.violations = violations
         super().__init__(f"case is not publishable: {list(violations)}")
+
+
+class NoPublishableCaseError(ApplicationError):
+    pass
