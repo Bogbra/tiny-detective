@@ -116,6 +116,8 @@ gcloud firestore fields ttls describe expireAt --collection-group=case_attempts 
 
 See [ADR-0006's Cloud Scheduler amendment](architecture-decisions/ADR-0006-deployment-topology.md#amendment-automated-daily-case-publishing-via-cloud-scheduler) for why this exists: the daily case's publish step was a manual admin call with no reminder and no fallback, and was genuinely forgotten twice in production. This replaces the human step with a scheduled call to the new `POST /admin/cases/publish-next-daily` endpoint, which picks the case itself.
 
+**`gcloud scheduler jobs create`/`update` echo the full created/updated job resource back to stdout by default — including any `--headers` value.** Found the hard way: the first real run of the `create` command below printed `X-Admin-Token: <the real token>` in plaintext into a terminal/chat transcript, which was then treated as a compromise and rotated (see ADR-0006's amendment). Always redirect output when a header carries a secret, as done below — do not run this without the `--quiet ... >/dev/null` suppression.
+
 ```bash
 # Fetch the real admin token into a shell variable — never echoed, never
 # committed to the job definition as a literal in this file. Unset
@@ -134,9 +136,22 @@ gcloud scheduler jobs create http publish-daily-case \
   --headers="X-Admin-Token=${ADMIN_TOKEN}" \
   --attempt-deadline=30s \
   --max-retry-attempts=3 \
-  --project="$GCP_PROJECT_ID"
+  --project="$GCP_PROJECT_ID" \
+  --quiet >/dev/null
 
 unset ADMIN_TOKEN
+```
+
+If the token is ever rotated (Secret Manager gets a new `ADMIN_API_TOKEN` version for any reason), the Scheduler job's header must be updated to match — same output-suppression rule applies:
+
+```bash
+NEW_TOKEN=$(gcloud secrets versions access latest --secret=ADMIN_API_TOKEN --project="$GCP_PROJECT_ID")
+gcloud scheduler jobs update http publish-daily-case \
+  --location="$GCP_REGION" \
+  --project="$GCP_PROJECT_ID" \
+  --update-headers="X-Admin-Token=${NEW_TOKEN}" \
+  --quiet >/dev/null
+unset NEW_TOKEN
 ```
 
 `0 6 * * *` (06:00 UTC) is an arbitrary but fixed daily time, chosen to run well before typical player traffic in the demo's expected timezone — not derived from any real usage data, since none exists yet. Verify the job actually works before trusting it silently:

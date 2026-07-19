@@ -28,6 +28,16 @@ class PublishNextDailyCase:
     catalog is genuinely empty (every case draft/rejected/archived), the
     real failure worth alerting on — not "ran out of fresh content" for a
     single-case catalog that was never going to have daily variety yet.
+
+    Restricted to source == "curated": found live, not in review — every
+    case a player successfully generates via the live-generation feature
+    (see ADR-0007) is also saved with status=LIVE (generate_case.py), so
+    without this filter the very first real-world run of this use case
+    picked a random one-off, player-specific live_generated case as the
+    public daily case instead of the intended curated one. The "daily
+    case" is an editorial choice; live-generated cases are deliberately
+    ad-hoc per-player content that was never meant to become someone
+    else's daily case just by having been generated once.
     """
 
     def __init__(self, case_repository: CaseRepository, publish_policy: PublishPolicy | None = None) -> None:
@@ -37,7 +47,11 @@ class PublishNextDailyCase:
 
     def execute(self) -> CaseId:
         all_cases = self._case_repository.list_all()
-        eligible = [case for case in all_cases if self._publish_policy.evaluate(case).is_eligible]
+        eligible = [
+            case
+            for case in all_cases
+            if case.source == "curated" and self._publish_policy.evaluate(case).is_eligible
+        ]
         if not eligible:
             raise NoPublishableCaseError("no case is currently eligible to be published as the daily case")
 

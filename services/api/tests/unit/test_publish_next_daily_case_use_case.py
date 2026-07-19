@@ -55,6 +55,33 @@ def test_rotates_away_from_todays_case_when_an_alternative_exists(make_case):
     assert published_id.value == "case_b"
 
 
+def test_ignores_live_generated_cases_even_when_status_is_live(make_case):
+    # Found live, not in review: player-generated cases are saved with
+    # status=LIVE too (see generate_case.py), so without a source filter
+    # this use case would rotate the public daily case onto a random
+    # one-off, per-player generated case instead of the curated one.
+    curated_case = make_case(case_id=CaseId("case_curated"), status=PublishStatus.LIVE, source="curated")
+    generated_case = make_case(
+        case_id=CaseId("case_live_abc123"), status=PublishStatus.LIVE, source="live_generated"
+    )
+    case_repository = InMemoryCaseRepository(initial_cases=[curated_case, generated_case])
+    case_repository.set_daily(curated_case.case_id)
+
+    published_id = PublishNextDailyCase(case_repository).execute()
+
+    assert published_id.value == "case_curated"
+
+
+def test_raises_when_only_live_generated_cases_exist(make_case):
+    generated_case = make_case(
+        case_id=CaseId("case_live_abc123"), status=PublishStatus.LIVE, source="live_generated"
+    )
+    case_repository = InMemoryCaseRepository(initial_cases=[generated_case])
+
+    with pytest.raises(NoPublishableCaseError):
+        PublishNextDailyCase(case_repository).execute()
+
+
 def test_ignores_draft_and_rejected_cases_when_rotating(make_case):
     live_case = make_case(case_id=CaseId("case_live"), status=PublishStatus.LIVE)
     draft_case = make_case(case_id=CaseId("case_draft"), status=PublishStatus.DRAFT)
