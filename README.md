@@ -131,6 +131,7 @@ Live: Firebase Hosting for the Flutter web build, Cloud Run for the FastAPI back
 - **uv over pip+venv** for the backend — faster, but a second tool to know beyond what the project spec documents as the default.
 - **Clean/layered architecture** for both app and backend, even at MVP scale — more files and indirection, chosen because the project's explicit goal is to demonstrate architectural discipline (see [ADR-0002](docs/architecture-decisions/ADR-0002-clean-architecture.md)).
 - **Phase 1 scaffolds only the top-level `apps/`/`services/`/`tools/`/`packages/` separation**, not the full per-feature directory tree from the project spec's "Recommended Monorepo Structure" — those get created feature-by-feature as Phases 2–7 land, to avoid empty directories with no real content.
+- **`packages/contracts/` and `packages/game-rules/` are still empty, deliberately, confirmed rather than assumed at the end of the project** — each anticipated a specific trigger (a large-enough API surface to justify OpenAPI-to-Dart codegen; real cross-client rule duplication) that never actually happened at this project's scale. See each directory's own `README.md` for the concrete condition that would justify populating it.
 - **In-memory repositories were the Phase 3 default; Firestore (Phase 7) is now the real backing when configured** — same `CaseRepository`/`PlayerRepository`/`HintRequestRepository`/`AttemptRepository` interfaces (`app/application/ports.py`) either way, swapped in `app/api/dependencies.py` based on environment, zero use-case or route changes needed for the swap (see [ADR-0005](docs/architecture-decisions/ADR-0005-firestore-data-model.md)). No real GCP project was available in this environment — the local Firestore emulator (Docker) stands in.
 - **Admin auth is a single shared-secret header** (`X-Admin-Token` / `ADMIN_API_TOKEN`), not real authentication — adequate for an MVP admin surface with no real users yet; would need replacing before any real admin access is exposed.
 - **One `CaseRepository` covers case-fetch, solution-submit and hint-request** on the frontend, rather than splitting hints into their own repository — the whole gameplay loop is one cohesive use case from the UI's perspective; matches how `suspects`/`clues` stay presentation-and-domain-only (no independent data layer) since neither has its own endpoint.
@@ -152,3 +153,7 @@ Live: Firebase Hosting for the Flutter web build, Cloud Run for the FastAPI back
 ## Project Status
 
 All 8 phases complete. `docs/phase-reviews.md` (local, not published — see `.gitignore`) has the full phase-by-phase review history; [`docs/final-review.md`](docs/final-review.md) has the closing architecture and quality review.
+
+## License
+
+[MIT](LICENSE). See [SECURITY.md](SECURITY.md) for how to report a vulnerability.

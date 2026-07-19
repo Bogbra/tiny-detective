@@ -1,8 +1,10 @@
 [project]
 name = "tiny-detective-ai-content"
 version = "0.1.0"
-description = "Add your description here"
+description = "Offline AI case-generation pipeline for Tiny Detective AI: generate, schema/rule-validate, and AI-judge detective cases before they're approved for play. Also depended on directly by services/api for its live case-generation feature."
 requires-python = ">=3.12"
+authors = [{ name = "Bogbra", email = "thombog.inv@gmail.com" }]
+license = "MIT"
 dependencies = [
     "openai>=2.45.0",
     "python-dotenv>=1.2.2",

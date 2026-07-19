@@ -1,5 +1,5 @@
 name: game
-description: "A new Flutter project."
+description: "Tiny Detective AI: a cozy Flutter web detective game with AI-generated cases, a guarded AI hint assistant, and a live AI case-generation demo feature."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

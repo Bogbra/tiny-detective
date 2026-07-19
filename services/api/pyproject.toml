@@ -1,8 +1,10 @@
 [project]
 name = "tiny-detective-api"
 version = "0.1.0"
-description = "Add your description here"
+description = "FastAPI backend for Tiny Detective AI: case retrieval, solution scoring, guarded AI hints, and the live AI case-generation pipeline."
 requires-python = ">=3.12"
+authors = [{ name = "Bogbra", email = "thombog.inv@gmail.com" }]
+license = "MIT"
 dependencies = [
     "fastapi>=0.139.1",
     "google-cloud-firestore>=2.28.0",
