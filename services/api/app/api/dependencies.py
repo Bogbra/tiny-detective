@@ -39,6 +39,7 @@ from app.application.ports import (
 )
 from app.infrastructure.ai.ai_hint_assistant import OpenAIHintAssistant
 from app.infrastructure.ai.live_case_generator import LiveCaseGenerator
+from app.infrastructure.auth.scheduler_oidc import verify_scheduler_oidc_token
 from app.infrastructure.firestore.firestore_attempt_repository import FirestoreAttemptRepository
 from app.infrastructure.firestore.firestore_case_repository import FirestoreCaseRepository
 from app.infrastructure.firestore.firestore_client import is_firestore_configured
@@ -149,16 +150,33 @@ def get_generation_quota_repository() -> DailyGenerationQuotaRepository:
     return InMemoryDailyGenerationQuotaRepository(success_cap=success_cap, attempt_cap=attempt_cap)
 
 
-def require_admin(x_admin_token: str = Header(default="")) -> None:
-    """Protects admin routes with a shared-secret header.
+def require_admin(x_admin_token: str = Header(default=""), authorization: str = Header(default="")) -> None:
+    """Protects admin routes — either of two independent credentials grants access.
 
-    Disabled by default: if ADMIN_API_TOKEN isn't set, every admin request is
-    rejected regardless of the header sent. This is a deliberately minimal
-    MVP mechanism — real auth is out of scope until it's actually needed.
+    1. A shared-secret X-Admin-Token header, for human/manual admin API use.
+       Disabled by default: if ADMIN_API_TOKEN isn't set, this path never
+       grants access regardless of the header sent. Comparison uses
+       secrets.compare_digest to avoid a timing side-channel. Never log
+       x_admin_token or the expected token value.
+    2. A Google-signed OIDC bearer token from the Cloud Scheduler job that
+       drives publish-next-daily (see ADR-0006's Cloud Scheduler amendment
+       and app/infrastructure/auth/scheduler_oidc.py) — verified against
+       Google's own public certs plus an exact expected service-account
+       identity, not just "any authenticated Google caller". Also disabled
+       by default (fails closed if its own env vars aren't set), so this
+       path cannot be a silent backdoor on a deployment that never
+       configured it.
 
-    Comparison uses secrets.compare_digest to avoid a timing side-channel on
-    the token. Never log x_admin_token or the expected token value.
+    Real auth beyond these two narrow, purpose-built mechanisms is out of
+    scope until actually needed.
     """
     expected = os.environ.get(ADMIN_TOKEN_ENV_VAR)
-    if not expected or not secrets.compare_digest(x_admin_token, expected):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="admin authentication required")
+    if expected and secrets.compare_digest(x_admin_token, expected):
+        return
+
+    if authorization.startswith("Bearer "):
+        token = authorization.removeprefix("Bearer ")
+        if verify_scheduler_oidc_token(token):
+            return
+
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="admin authentication required")

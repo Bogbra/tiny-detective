@@ -4,6 +4,8 @@ POST /admin/cases/generate and POST /admin/cases/evaluate are not implemented
 yet — they depend on the AI case generation pipeline built in Phase 5.
 """
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.dependencies import get_case_repository, require_admin
@@ -20,6 +22,8 @@ from app.application.use_cases.publish_next_daily_case import PublishNextDailyCa
 from app.application.use_cases.reject_case import RejectCase
 from app.contracts.responses.admin import AdminActionResponse
 from app.domain.value_objects.case_id import CaseId
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin/cases", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -70,9 +74,23 @@ def publish_next_daily(case_repository: CaseRepository = Depends(get_case_reposi
     addendum. Takes no case_id: PublishNextDailyCase picks the case itself.
     A 409 here means the case catalog is genuinely empty, the real signal
     a scheduler-failure alert should fire on.
+
+    Logs at severity ERROR on that 409, deliberately, not just returning
+    the HTTP status: a caught HTTPException never reaches
+    logging_middleware's own error path (that only fires on an *unhandled*
+    exception escaping call_next — FastAPI resolves HTTPException into a
+    response before this middleware sees it), so without this explicit
+    log line an empty catalog would only ever produce an ordinary INFO
+    access-log entry. That would mean the exact regression this endpoint
+    exists to prevent — a daily case nobody remembered to publish — could
+    recur silently even with the scheduler itself working perfectly,
+    just for a different underlying reason (nothing left to publish
+    rather than nobody running the job). See docs/operations.md #7 for
+    the Cloud Monitoring alert policy this severity is meant to trip.
     """
     try:
         case_id = PublishNextDailyCase(case_repository).execute()
     except NoPublishableCaseError as exc:
+        logger.error("publish-next-daily found no publishable case: %s", exc)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return AdminActionResponse(case_id=case_id.value, status="live")

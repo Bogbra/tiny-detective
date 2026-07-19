@@ -14,6 +14,34 @@ def test_admin_endpoint_rejects_wrong_token(client, monkeypatch):
     assert response.status_code == 401
 
 
+def test_admin_endpoint_accepts_a_verified_scheduler_oidc_token(client, monkeypatch):
+    # No X-Admin-Token at all — only a Bearer token, exactly how the real
+    # Cloud Scheduler job authenticates once ADR-0006's OIDC hardening is
+    # configured. Mocked at the dependencies-module boundary (not
+    # scheduler_oidc's internals) since this test is about require_admin's
+    # wiring, not OIDC verification itself — that's scheduler_oidc's own
+    # unit tests (tests/unit/test_scheduler_oidc.py).
+    monkeypatch.delenv("ADMIN_API_TOKEN", raising=False)
+    monkeypatch.setattr("app.api.dependencies.verify_scheduler_oidc_token", lambda token: True)
+
+    response = client.post(
+        "/admin/cases/case_bakesale_001/approve", headers={"Authorization": "Bearer fake-oidc-token"}
+    )
+
+    assert response.status_code == 200
+
+
+def test_admin_endpoint_rejects_an_unverified_bearer_token(client, monkeypatch):
+    monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
+    monkeypatch.setattr("app.api.dependencies.verify_scheduler_oidc_token", lambda token: False)
+
+    response = client.post(
+        "/admin/cases/case_bakesale_001/approve", headers={"Authorization": "Bearer forged-token"}
+    )
+
+    assert response.status_code == 401
+
+
 def test_admin_endpoint_accepts_correct_token(client, monkeypatch):
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
 
@@ -86,12 +114,14 @@ def test_publish_next_daily_publishes_the_only_eligible_seed_case(client, monkey
     assert daily.json()["caseId"] == "case_museum_001"
 
 
-def test_publish_next_daily_returns_409_when_catalog_is_empty(client, monkeypatch):
+def test_publish_next_daily_returns_409_when_catalog_is_empty(client, monkeypatch, caplog):
     # case_museum_001 (APPROVED) is permanently eligible with no existing
     # admin endpoint to un-approve it, so an empty catalog isn't reachable
     # through seed data + the public admin API alone — swap in a genuinely
     # empty repository instead, the same way an emptied production
     # Firestore `cases` collection would look to this endpoint.
+    import logging
+
     from app.api import dependencies
     from app.infrastructure.repositories.in_memory_case_repository import InMemoryCaseRepository
     from app.main import app
@@ -99,9 +129,16 @@ def test_publish_next_daily_returns_409_when_catalog_is_empty(client, monkeypatc
     monkeypatch.setenv("ADMIN_API_TOKEN", "secret")
     app.dependency_overrides[dependencies.get_case_repository] = lambda: InMemoryCaseRepository()
 
-    response = client.post("/admin/cases/publish-next-daily", headers={"X-Admin-Token": "secret"})
+    with caplog.at_level(logging.ERROR, logger="app.api.routes.admin"):
+        response = client.post("/admin/cases/publish-next-daily", headers={"X-Admin-Token": "secret"})
 
     assert response.status_code == 409
+    # A caught HTTPException never reaches logging_middleware's own error
+    # path — this asserts the route's own explicit ERROR log actually
+    # fires, the real signal the Cloud Monitoring alert policy depends on.
+    error_records = [r for r in caplog.records if r.levelno == logging.ERROR]
+    assert len(error_records) == 1
+    assert "no publishable case" in error_records[0].message
 
 
 def test_publish_next_daily_rotates_away_from_todays_case(client, monkeypatch):

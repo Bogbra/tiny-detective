@@ -116,16 +116,31 @@ gcloud firestore fields ttls describe expireAt --collection-group=case_attempts 
 
 See [ADR-0006's Cloud Scheduler amendment](architecture-decisions/ADR-0006-deployment-topology.md#amendment-automated-daily-case-publishing-via-cloud-scheduler) for why this exists: the daily case's publish step was a manual admin call with no reminder and no fallback, and was genuinely forgotten twice in production. This replaces the human step with a scheduled call to the new `POST /admin/cases/publish-next-daily` endpoint, which picks the case itself.
 
-**`gcloud scheduler jobs create`/`update` echo the full created/updated job resource back to stdout by default — including any `--headers` value.** Found the hard way: the first real run of the `create` command below printed `X-Admin-Token: <the real token>` in plaintext into a terminal/chat transcript, which was then treated as a compromise and rotated (see ADR-0006's amendment). Always redirect output when a header carries a secret, as done below — do not run this without the `--quiet ... >/dev/null` suppression.
+**Originally set up with a static `X-Admin-Token` header; now uses OIDC instead — kept below only as a documented incident, not the live configuration.** `gcloud scheduler jobs create`/`update` echo the full created/updated job resource back to stdout by default, including any `--headers` value — the first real run of the `create` command below printed the real `X-Admin-Token` in plaintext into a terminal/chat transcript. Treated as a real compromise and rotated (see ADR-0006's amendment). The header-based approach has since been replaced entirely with OIDC verification (below), which structurally cannot leak this way — no secret value is ever stored in the job resource at all, so there's nothing for `describe`, a stray log line, or a forgotten `--quiet` to expose. This block is kept as a record of what not to do, and because the header path still exists in `require_admin` for human/manual admin API use — just no longer for the Scheduler job.
 
 ```bash
-# Fetch the real admin token into a shell variable — never echoed, never
-# committed to the job definition as a literal in this file. Unset
-# immediately after the job is created; Cloud Scheduler stores the header
-# value in the job resource from that point on (see the ADR's stated
-# trade-off: readable by anyone with roles/cloudscheduler.viewer, not just
-# Secret Manager's own IAM).
+# DO NOT USE for the Scheduler job — see above. Kept for reference only
+# (e.g. manual curl testing of admin endpoints). If a header carrying a
+# secret is ever passed to a gcloud command for any reason, always
+# redirect output as shown, never run it bare.
 ADMIN_TOKEN=$(gcloud secrets versions access latest --secret=ADMIN_API_TOKEN --project="$GCP_PROJECT_ID")
+curl -s -X POST -H "X-Admin-Token: ${ADMIN_TOKEN}" \
+  https://tiny-detective-api-n7fn34d2jq-ew.a.run.app/admin/cases/publish-next-daily
+unset ADMIN_TOKEN
+```
+
+**Live configuration: OIDC, verified by the application itself (`app/infrastructure/auth/scheduler_oidc.py`), no secret in the job resource.**
+
+```bash
+# One-time: a dedicated service account for the Scheduler job, with no
+# extra IAM roles — it doesn't need roles/run.invoker (this service is
+# --allow-unauthenticated; the token is verified at the app layer, not by
+# Cloud Run's own IAM gate), and needs no Firestore/Secret Manager access
+# either. Its only purpose is to be an identity Cloud Scheduler can prove
+# via a Google-signed token.
+gcloud iam service-accounts create tiny-detective-scheduler \
+  --project="$GCP_PROJECT_ID" \
+  --display-name="Cloud Scheduler: daily case auto-publish"
 
 gcloud scheduler jobs create http publish-daily-case \
   --location="$GCP_REGION" \
@@ -133,26 +148,14 @@ gcloud scheduler jobs create http publish-daily-case \
   --time-zone="Etc/UTC" \
   --uri="https://tiny-detective-api-n7fn34d2jq-ew.a.run.app/admin/cases/publish-next-daily" \
   --http-method=POST \
-  --headers="X-Admin-Token=${ADMIN_TOKEN}" \
+  --oidc-service-account-email="tiny-detective-scheduler@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+  --oidc-token-audience="https://tiny-detective-api-n7fn34d2jq-ew.a.run.app/admin/cases/publish-next-daily" \
   --attempt-deadline=30s \
   --max-retry-attempts=3 \
-  --project="$GCP_PROJECT_ID" \
-  --quiet >/dev/null
-
-unset ADMIN_TOKEN
+  --project="$GCP_PROJECT_ID"
 ```
 
-If the token is ever rotated (Secret Manager gets a new `ADMIN_API_TOKEN` version for any reason), the Scheduler job's header must be updated to match — same output-suppression rule applies:
-
-```bash
-NEW_TOKEN=$(gcloud secrets versions access latest --secret=ADMIN_API_TOKEN --project="$GCP_PROJECT_ID")
-gcloud scheduler jobs update http publish-daily-case \
-  --location="$GCP_REGION" \
-  --project="$GCP_PROJECT_ID" \
-  --update-headers="X-Admin-Token=${NEW_TOKEN}" \
-  --quiet >/dev/null
-unset NEW_TOKEN
-```
+No `--quiet >/dev/null` needed here — there's no secret in the command or its output to suppress, which is the entire point. `SCHEDULER_SERVICE_ACCOUNT_EMAIL` and `SCHEDULER_OIDC_AUDIENCE` (matching the two flags above) are set as Cloud Run env vars in `deploy.yml`, not by a separate manual step — they're ordinary (non-secret) configuration, unlike `ADMIN_API_TOKEN`.
 
 `0 6 * * *` (06:00 UTC) is an arbitrary but fixed daily time, chosen to run well before typical player traffic in the demo's expected timezone — not derived from any real usage data, since none exists yet. Verify the job actually works before trusting it silently:
 
@@ -163,18 +166,32 @@ gcloud scheduler jobs describe publish-daily-case --location="$GCP_REGION" --pro
 curl -s https://tiny-detective-api-n7fn34d2jq-ew.a.run.app/cases/daily | head -c 200
 ```
 
-**Alerting on scheduler failure** — reuses the notification channel from §2 rather than creating a second one:
+**Alerting on scheduler failure — actually created and verified against real GCP, not just documented.** The first draft of this section guessed at a metric (`cloudscheduler.googleapis.com/job/execution_count`) that turned out not to exist — checked for real via `projects.metricDescriptors.list` and a direct `timeSeries.list` call, both came back empty/404 for that metric type. Real inspection of actual execution logs (`gcloud logging read 'resource.type="cloud_scheduler_job" AND resource.labels.job_id="publish-daily-case"'`) showed Cloud Scheduler instead writes structured `AttemptFinished`/`AttemptStarted` log entries with a real `severity` field (confirmed `INFO` on the job's real successful executions) — GCP's documented behavior is that this becomes `ERROR` on a failed attempt (max-retries-exhausted or non-2xx), the same signal this project's own Error Reporting integration (task 12) already relies on elsewhere. Built the alert on that, as a log-based metric plus a threshold policy — no guessed metric type involved:
 
 ```bash
+# One-time: a log-based metric counting non-success executions of this
+# specific job, from real log structure inspected via `gcloud logging read`
+# above, not from documentation alone.
+gcloud logging metrics create publish_daily_case_failures \
+  --project="$GCP_PROJECT_ID" \
+  --description="Cloud Scheduler failed to publish the daily case (publish-daily-case job, non-success execution)" \
+  --log-filter='resource.type="cloud_scheduler_job" AND resource.labels.job_id="publish-daily-case" AND severity>=ERROR'
+
+# Reuses the notification channel from §2 if one already exists; this
+# project's channel was created fresh in the same pass as this alert
+# (§2's channel had been documented but never actually run before this).
 gcloud alpha monitoring policies create \
   --display-name="tiny-detective-api daily case publish failing" \
-  --condition-display-name="Scheduler job non-success executions" \
-  --condition-filter='resource.type="cloud_scheduler_job" AND resource.labels.job_id="publish-daily-case" AND metric.type="cloudscheduler.googleapis.com/job/execution_count"' \
-  --condition-threshold-value=0 \
-  --condition-threshold-comparison=COMPARISON_GT \
-  --condition-threshold-duration=0s \
-  --condition-aggregations=alignmentPeriod=3600s,perSeriesAligner=ALIGN_COUNT,crossSeriesReducer=REDUCE_COUNT,groupByFields=metric.labels.response_code_class \
-  --notification-channels=CHANNEL_ID_FROM_STEP_2
+  --project="$GCP_PROJECT_ID" \
+  --notification-channels="CHANNEL_ID_FROM_STEP_2" \
+  --combiner=OR \
+  --condition-display-name="publish-daily-case non-success execution" \
+  --condition-filter='resource.type="cloud_scheduler_job" AND metric.type="logging.googleapis.com/user/publish_daily_case_failures"' \
+  --duration=0s \
+  --if='> 0' \
+  --aggregation='{"alignmentPeriod": "3600s", "perSeriesAligner": "ALIGN_COUNT"}'
 ```
 
-Same honesty caveat as §6's TTL commands: this alert policy was written from Cloud Scheduler's documented Cloud Monitoring metric (`cloudscheduler.googleapis.com/job/execution_count`, labeled by `response_code_class`), not fired-and-confirmed against a real non-2xx execution in this pass — a genuinely empty catalog (the only way `publish-next-daily` itself returns `409`) is deliberately hard to reach outside a test double (see `test_publish_next_daily_returns_409_when_catalog_is_empty`), so triggering a real failing execution to validate the alert would mean actually emptying the production catalog. Confirm the policy fires by checking Monitoring → Alerting after the job's next scheduled run, and re-derive the exact filter from Console → Monitoring → Metrics Explorer → `cloud_scheduler_job` if the label names above don't match what's actually emitted.
+Verified with `gcloud alpha monitoring policies describe <name>` immediately after creation: `enabled: true`, the correct `notificationChannels` entry, and the exact filter above — confirms the policy exists and is wired correctly. What's *not* yet been observed is a real firing (that needs an actual non-success execution, which the job hasn't had) — same honest scope as this project's other real-GCP caveats: configuration is verified, end-to-end firing behavior is not, and won't be until either a real failure happens or one is deliberately (and carefully) provoked.
+
+This alert covers the empty-pool case (§7's `publish-next-daily` returns `409`, which Cloud Scheduler counts as a failed attempt) and every other way the job could fail (endpoint down, network error, 5xx) with one mechanism — broader and simpler than a case specifically targeted at the empty-pool 409, and it complements rather than replaces the deterministic `logger.error(...)` call in `app/api/routes/admin.py`'s `publish_next_daily` route (that one fires the moment the *application* detects an empty catalog, independent of whether Cloud Scheduler's own retry/logging behavior works as expected — two independent signals for the same underlying failure, not one relying on the other).

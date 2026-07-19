@@ -92,7 +92,7 @@ jobs:
             --min-instances=0
             --timeout=120s
             --concurrency=40
-            --set-env-vars=GOOGLE_CLOUD_PROJECT=${{ vars.GCP_PROJECT_ID }},ALLOWED_ORIGINS=https://${{ vars.GCP_PROJECT_ID }}.web.app,REQUIRE_PERSISTENT_STORAGE=true
+            --set-env-vars=GOOGLE_CLOUD_PROJECT=${{ vars.GCP_PROJECT_ID }},ALLOWED_ORIGINS=https://${{ vars.GCP_PROJECT_ID }}.web.app,REQUIRE_PERSISTENT_STORAGE=true,SCHEDULER_SERVICE_ACCOUNT_EMAIL=tiny-detective-scheduler@${{ vars.GCP_PROJECT_ID }}.iam.gserviceaccount.com,SCHEDULER_OIDC_AUDIENCE=https://tiny-detective-api-n7fn34d2jq-ew.a.run.app/admin/cases/publish-next-daily
             --set-secrets=ADMIN_API_TOKEN=ADMIN_API_TOKEN:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest
 
       - name: Deploy Firestore rules and indexes
