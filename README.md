@@ -2,8 +2,6 @@
 
 A casual detective game where players read a short mystery, inspect suspects and clues, optionally ask for limited AI hints, submit their solution, and can generate a brand-new AI case live to keep playing. Built as a compact but serious full-stack product prototype: Flutter frontend, FastAPI backend, Firestore persistence, and an AI-native content/evaluation pipeline for generating and vetting cases.
 
-**Live demo:** [tiny-detective-ai.web.app](https://tiny-detective-ai.web.app) — real Cloud Run backend, real Firestore, real OpenAI-backed hints and case generation. Note: both the hint endpoint and the "Generate a new case" feature are rate-limited (see Deployment Overview below); if a daily case isn't published, the app shows its error state with a retry button.
-
 |                                                                              |                                                                                |
 | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
 | ![Case loaded](docs/screenshots/01-case-loaded.png) | ![Hint requested](docs/screenshots/02-hint-requested.png) |
